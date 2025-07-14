@@ -8,7 +8,7 @@ import ClearButton from './components/ClearButton'
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('')
   const [selectedPredicate, setSelectedPredicate] = useState('')
-  const keyboardRef = useRef<{ clearAll: () => void }>(null)
+  const keyboardRef = useRef<{ clearAll: () => void; commitCurrentChar: () => void }>(null)
 
   const handleTextChange = (text: string) => {
     setInputText(text)
@@ -33,6 +33,12 @@ const App: React.FC = () => {
     keyboardRef.current?.clearAll()
   }
 
+  const handleCompleteInput = () => {
+    // 현재 입력 중인 문자를 완성시킴
+    keyboardRef.current?.commitCurrentChar()
+    // 입력 완성 후 추가 처리 (서술어 목록 업데이트 등)
+  }
+
   return (
     <div style={{ 
       height: '100vh', 
@@ -42,7 +48,8 @@ const App: React.FC = () => {
     }}>
       <TextDisplay 
         inputText={inputText} 
-        selectedPredicate={selectedPredicate} 
+        selectedPredicate={selectedPredicate}
+        onCompleteInput={handleCompleteInput}
       />
       
       <PredicateList 

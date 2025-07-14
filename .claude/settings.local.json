@@ -14,7 +14,10 @@
       "Bash(true)",
       "Bash(ls:*)",
       "Bash(npm test:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

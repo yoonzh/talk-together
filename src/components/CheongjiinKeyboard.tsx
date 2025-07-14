@@ -7,18 +7,20 @@ interface CheongjiinKeyboardProps {
 
 interface CheongjiinKeyboardRef {
   clearAll: () => void
+  commitCurrentChar: () => void
 }
 
 const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange }, ref) => {
-  const { text, handleKeyPress, clearAll } = useCheongjiinInput()
+  const { text, handleKeyPress, clearAll, commitCurrentChar } = useCheongjiinInput()
 
   useEffect(() => {
     onTextChange(text)
   }, [text, onTextChange])
 
   useImperativeHandle(ref, () => ({
-    clearAll
-  }), [clearAll])
+    clearAll,
+    commitCurrentChar
+  }), [clearAll, commitCurrentChar])
 
   const keyboardLayout = [
     ['ㅣ', 'ㆍ', 'ㅡ'],

@@ -41,7 +41,7 @@ const SpeechButton: React.FC<SpeechButtonProps> = ({ text, onSpeak }) => {
       }}
     >
       <span style={{ fontSize: '24px' }}>🔊</span>
-      말하기
+      소리내기
     </button>
   )
 }
