@@ -3,6 +3,7 @@ import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 
 interface CheongjiinKeyboardProps {
   onTextChange: (text: string) => void
+  onKeyPress?: () => void
 }
 
 interface CheongjiinKeyboardRef {
@@ -10,7 +11,7 @@ interface CheongjiinKeyboardRef {
   commitCurrentChar: () => void
 }
 
-const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange }, ref) => {
+const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress }, ref) => {
   const { text, handleKeyPress, clearAll, commitCurrentChar } = useCheongjiinInput()
 
   useEffect(() => {
@@ -75,6 +76,7 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
   }
 
   const handleKeyClick = (key: string) => {
+    onKeyPress?.()
     handleKeyPress(key)
   }
 
