@@ -220,9 +220,20 @@ export const useCheongjiinInput = () => {
     return state.text + getCurrentDisplay()
   }, [state.text, getCurrentDisplay])
 
+  const clearAll = useCallback(() => {
+    setState({
+      text: '',
+      currentChar: { initial: '', medial: '', final: '' },
+      vowelSequence: [],
+      consonantClickCounts: {},
+      isComposing: false
+    })
+  }, [])
+
   return {
     text: getFullText(),
     handleKeyPress,
-    commitCurrentChar
+    commitCurrentChar,
+    clearAll
   }
 }

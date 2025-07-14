@@ -1,16 +1,24 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 
 interface CheongjiinKeyboardProps {
   onTextChange: (text: string) => void
 }
 
-const CheongjiinKeyboard: React.FC<CheongjiinKeyboardProps> = ({ onTextChange }) => {
-  const { text, handleKeyPress } = useCheongjiinInput()
+interface CheongjiinKeyboardRef {
+  clearAll: () => void
+}
+
+const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange }, ref) => {
+  const { text, handleKeyPress, clearAll } = useCheongjiinInput()
 
   useEffect(() => {
     onTextChange(text)
   }, [text, onTextChange])
+
+  useImperativeHandle(ref, () => ({
+    clearAll
+  }), [clearAll])
 
   const keyboardLayout = [
     ['ㅣ', 'ㆍ', 'ㅡ'],
@@ -116,6 +124,8 @@ const CheongjiinKeyboard: React.FC<CheongjiinKeyboardProps> = ({ onTextChange })
       </div>
     </div>
   )
-}
+})
+
+CheongjiinKeyboard.displayName = 'CheongjiinKeyboard'
 
 export default CheongjiinKeyboard
