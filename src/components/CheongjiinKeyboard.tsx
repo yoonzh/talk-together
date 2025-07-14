@@ -84,14 +84,17 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     <div style={{
       padding: '20px',
       backgroundColor: '#f5f5f5',
-      borderTop: '2px solid #e0e0e0'
+      borderTop: '2px solid #e0e0e0',
+      flexShrink: 0, /* 키보드 크기 고정 */
+      paddingBottom: 'calc(20px + var(--safe-area-inset-bottom))' /* 아이폰 하단 여백 */
     }}>
       <div style={{
         display: 'grid',
         gridTemplateRows: 'repeat(4, 1fr)',
         gap: '10px',
         maxWidth: '400px',
-        margin: '0 auto'
+        margin: '0 auto',
+        height: '280px' /* 키보드 높이 고정 */
       }}>
         {keyboardLayout.map((row, rowIndex) => (
           <div

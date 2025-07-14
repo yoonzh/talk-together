@@ -50,7 +50,8 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
       flex: 1,
       padding: '20px',
       backgroundColor: '#f9f9f9',
-      overflowY: 'auto'
+      overflowY: 'auto',
+      minHeight: 0 /* flex 자식에서 스크롤 활성화 */
     }}>
       {loading && (
         <div style={{

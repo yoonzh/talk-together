@@ -63,10 +63,11 @@ const App: React.FC = () => {
 
   return (
     <div style={{ 
-      height: '100vh', 
+      height: '100%',
       display: 'flex', 
       flexDirection: 'column',
-      backgroundColor: '#f0f8ff'
+      backgroundColor: '#f0f8ff',
+      overflow: 'hidden'
     }}>
       <TextDisplay 
         inputText={inputText} 
