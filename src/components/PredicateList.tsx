@@ -10,15 +10,16 @@ interface PredicateCandidate {
 interface PredicateListProps {
   inputText: string
   onPredicateSelect: (predicate: string) => void
+  shouldGenerate?: boolean
 }
 
-const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSelect }) => {
+const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSelect, shouldGenerate = false }) => {
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     const generatePredicates = async () => {
-      if (!inputText.trim()) {
+      if (!inputText.trim() || !shouldGenerate) {
         setPredicates([])
         return
       }
@@ -37,11 +38,12 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
       }
     }
     
-    // 디바운스: 사용자가 입력을 멈춘 후 500ms 후에 AI 호출
-    const debounceTimer = setTimeout(generatePredicates, 500)
-    
-    return () => clearTimeout(debounceTimer)
-  }, [inputText])
+    if (shouldGenerate) {
+      generatePredicates()
+    } else {
+      setPredicates([])
+    }
+  }, [inputText, shouldGenerate])
 
   return (
     <div style={{

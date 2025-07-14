@@ -8,10 +8,13 @@ import ClearButton from './components/ClearButton'
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('')
   const [selectedPredicate, setSelectedPredicate] = useState('')
+  const [shouldGeneratePredicates, setShouldGeneratePredicates] = useState(false)
   const keyboardRef = useRef<{ clearAll: () => void; commitCurrentChar: () => void }>(null)
 
   const handleTextChange = (text: string) => {
     setInputText(text)
+    // 텍스트가 변경되면 서술어 생성 비활성화
+    setShouldGeneratePredicates(false)
   }
 
   const handlePredicateSelect = (predicate: string) => {
@@ -30,13 +33,15 @@ const App: React.FC = () => {
   const handleClearAll = () => {
     setInputText('')
     setSelectedPredicate('')
+    setShouldGeneratePredicates(false)
     keyboardRef.current?.clearAll()
   }
 
   const handleCompleteInput = () => {
     // 현재 입력 중인 문자를 완성시킴
     keyboardRef.current?.commitCurrentChar()
-    // 입력 완성 후 추가 처리 (서술어 목록 업데이트 등)
+    // 입력 완성 후 AI 서술어 생성 시작
+    setShouldGeneratePredicates(true)
   }
 
   return (
@@ -55,6 +60,7 @@ const App: React.FC = () => {
       <PredicateList 
         inputText={inputText}
         onPredicateSelect={handlePredicateSelect}
+        shouldGenerate={shouldGeneratePredicates}
       />
       
       <div style={{

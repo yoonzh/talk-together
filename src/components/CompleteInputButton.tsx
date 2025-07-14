@@ -40,7 +40,7 @@ const CompleteInputButton: React.FC<CompleteInputButtonProps> = ({ onComplete, d
         }
       }}
     >
-      💬
+      🗣️
     </button>
   )
 }
