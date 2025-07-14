@@ -1,4 +1,4 @@
-import React, { useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 
 interface CheongjiinKeyboardProps {
