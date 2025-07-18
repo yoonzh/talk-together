@@ -82,7 +82,7 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
               .loading-dot-3 { animation: loadingDots 1.4s infinite 0.4s; }
             `}
           </style>
-          똑똑이🤖가 어떤 말을 할지 생각 중이에요
+          🤖 똑똑이가 어떤 말을 할지 생각 중이에요
           <span className="loading-dot-1">.</span>
           <span className="loading-dot-2">.</span>
           <span className="loading-dot-3">.</span>
