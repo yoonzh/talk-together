@@ -51,16 +51,24 @@ export class OpenAIService {
 1. 자폐장애인이 일상에서 자주 사용할 만한 표현
 2. 간단하고 이해하기 쉬운 문장
 3. 각 서술어마다 적절한 이모지 1개
-4. 명사의 의미와 문맥에 맞는 서술어
-5. 조사는 받침 유무와 상관없이 "을/를", "이/가", "와/과" 형태로 사용 (자동 변환됨)
+4. 명사의 의미와 문맥에 정확히 맞는 서술어를 생성하세요
+5. 해당 명사와 관련된 구체적인 행동, 상태, 감정을 표현하세요
+6. 조사를 자연스럽게 사용하되, 문법적으로 올바른 형태로 생성하세요
+7. 카테고리는 해당 문장의 의미에 맞는 한국어로 표현하세요
+
+예시:
+- "자동차" → "자동차를 타고 가요", "자동차가 빨라요", "자동차를 운전해요", "자동차가 멋져요"
+- "병원" → "병원에 가야 해요", "병원에서 치료받아요", "병원이 무서워요", "병원 선생님이 좋아요"
+- "수영" → "수영을 배우고 싶어요", "수영이 재미있어요", "수영장에 가고 싶어요", "수영을 잘해요"
 
 출력 형식 (JSON):
+text는 명사를 포함한 완전한 문장으로 생성해주세요.
 {
   "predicates": [
-    {"text": "을/를 먹고 싶어요", "emoji": "🍽️", "category": "food"},
-    {"text": "이/가 맛있어요", "emoji": "😋", "category": "food"},
-    {"text": "을/를 주세요", "emoji": "🤲", "category": "general"},
-    {"text": "이/가 필요해요", "emoji": "🤗", "category": "general"}
+    {"text": "자동차를 타고 가요", "emoji": "🚗", "category": "이동"},
+    {"text": "자동차가 빨라요", "emoji": "💨", "category": "특성"},
+    {"text": "자동차를 운전해요", "emoji": "🚙", "category": "행동"},
+    {"text": "자동차가 멋져요", "emoji": "✨", "category": "감정"}
   ]
 }
 
@@ -134,46 +142,46 @@ export class OpenAIService {
     switch (category) {
       case 'place':
         basePredicates = [
-          { text: '에 가고 싶어요', emoji: '🚶', category: 'place' },
-          { text: '에 있어요', emoji: '🏠', category: 'place' },
-          { text: '이/가 좋아요', emoji: '😊', category: 'general' },
-          { text: '에서 쉬고 싶어요', emoji: '😴', category: 'place' }
+          { text: '에 가고 싶어요', emoji: '🚶', category: '장소' },
+          { text: '에 있어요', emoji: '🏠', category: '위치' },
+          { text: '이/가 좋아요', emoji: '😊', category: '감정' },
+          { text: '에서 쉬고 싶어요', emoji: '😴', category: '휴식' }
         ]
         break
       
       case 'food':
         basePredicates = [
-          { text: '을/를 먹고 싶어요', emoji: '🍽️', category: 'food' },
-          { text: '이/가 맛있어요', emoji: '😋', category: 'food' },
-          { text: '을/를 주세요', emoji: '🤲', category: 'general' },
-          { text: '이/가 필요해요', emoji: '🤗', category: 'general' }
+          { text: '을/를 먹고 싶어요', emoji: '🍽️', category: '음식' },
+          { text: '이/가 맛있어요', emoji: '😋', category: '맛' },
+          { text: '을/를 주세요', emoji: '🤲', category: '요청' },
+          { text: '이/가 필요해요', emoji: '🤗', category: '필요' }
         ]
         break
       
       case 'activity':
         basePredicates = [
-          { text: '을/를 하고 싶어요', emoji: '🙌', category: 'activity' },
-          { text: '이/가 좋아요', emoji: '😊', category: 'general' },
-          { text: '이/가 재미있어요', emoji: '😄', category: 'general' },
-          { text: '을/를 배우고 싶어요', emoji: '📚', category: 'activity' }
+          { text: '을/를 하고 싶어요', emoji: '🙌', category: '활동' },
+          { text: '이/가 좋아요', emoji: '😊', category: '감정' },
+          { text: '이/가 재미있어요', emoji: '😄', category: '기분' },
+          { text: '을/를 배우고 싶어요', emoji: '📚', category: '학습' }
         ]
         break
       
       case 'person':
         basePredicates = [
-          { text: '이/가 좋아요', emoji: '😊', category: 'general' },
-          { text: '을/를 만나고 싶어요', emoji: '🤗', category: 'person' },
-          { text: '이/가 보고 싶어요', emoji: '💕', category: 'person' },
-          { text: '을/를 도와주세요', emoji: '🙏', category: 'general' }
+          { text: '이/가 좋아요', emoji: '😊', category: '감정' },
+          { text: '을/를 만나고 싶어요', emoji: '🤗', category: '만남' },
+          { text: '이/가 보고 싶어요', emoji: '💕', category: '그리움' },
+          { text: '을/를 도와주세요', emoji: '🙏', category: '도움' }
         ]
         break
       
       default:
         basePredicates = [
-          { text: '이/가 좋아요', emoji: '😊', category: 'general' },
-          { text: '이/가 필요해요', emoji: '🤲', category: 'general' },
-          { text: '을/를 원해요', emoji: '🙌', category: 'general' },
-          { text: '을/를 도와주세요', emoji: '🙏', category: 'general' }
+          { text: '이/가 좋아요', emoji: '😊', category: '감정' },
+          { text: '이/가 필요해요', emoji: '🤲', category: '필요' },
+          { text: '을/를 원해요', emoji: '🙌', category: '바람' },
+          { text: '을/를 도와주세요', emoji: '🙏', category: '도움' }
         ]
     }
     
