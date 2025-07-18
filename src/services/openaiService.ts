@@ -44,7 +44,7 @@ export class OpenAIService {
         console.log(response)
         console.log('=== AI 응답 끝 ===')
         logAiService('OpenAI API 응답 성공, 파싱 시작')
-        const result = this.parseResponse(response, noun)
+        const result = this.parseResponse(response)
         logAiService(`서술어 생성 완료: ${result.length}개 생성`)
         return result
       }
@@ -144,14 +144,14 @@ text는 명사를 포함한 완전한 문장으로 생성해주세요.
     }
   }
   
-  private parseResponse(response: string, noun: string): PredicateCandidate[] {
+  private parseResponse(response: string): PredicateCandidate[] {
     try {
       const cleaned = response.replace(/```json\n?|\n?```/g, '').trim()
       const parsed = JSON.parse(cleaned)
       
       if (parsed.predicates && Array.isArray(parsed.predicates)) {
         return parsed.predicates.map((p: any) => ({
-          text: processJosi(noun, p.text || ''),
+          text: p.text || '',
           emoji: p.emoji || '😊',
           category: p.category || 'general'
         }))
