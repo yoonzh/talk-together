@@ -40,7 +40,7 @@ const KeyboardToggleButton: React.FC<KeyboardToggleButtonProps> = ({ onClick, di
         }
       }}
     >
-      ㄱ
+#️⃣
     </button>
   )
 }

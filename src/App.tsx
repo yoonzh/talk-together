@@ -4,7 +4,6 @@ import CheongjiinKeyboard from './components/CheongjiinKeyboard'
 import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
 import SpeechButton from './components/SpeechButton'
-import ClearButton from './components/ClearButton'
 import KeyboardToggleButton from './components/KeyboardToggleButton'
 
 const App: React.FC = () => {
@@ -126,6 +125,7 @@ const App: React.FC = () => {
         onCompleteInput={handleCompleteInput}
         isComposing={compositionState.isComposing}
         currentChar={compositionState.currentChar}
+        keyboardVisible={keyboardVisible}
       />
       
       <PredicateList 
@@ -149,27 +149,18 @@ const App: React.FC = () => {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <ClearButton 
-            onClear={handleClearAll}
-            disabled={!inputText.trim() && !selectedPredicate.trim()}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
           <KeyboardToggleButton 
             onClick={() => {
               // 먼저 조합 중인 글자가 있으면 완성
               commitComposingChar()
               
-              logUserAction('ㄱ버튼 클릭', { inputText })
-              logKeyboardState('키보드 복원', { preservedText: inputText })
+              // 전체삭제 동작 수행
+              handleClearAll()
+              
+              logUserAction('#️⃣버튼 클릭', { inputText })
+              logKeyboardState('키보드 복원 및 전체삭제')
               setKeyboardVisible(true)
               setKeyboardReturnedViaButton(true)
-              // 키보드가 다시 나타날 때 현재 텍스트를 키보드에 설정
-              setTimeout(() => {
-                if (keyboardRef.current && inputText) {
-                  keyboardRef.current.setText(inputText)
-                }
-              }, 0)
             }}
             disabled={keyboardVisible}
           />

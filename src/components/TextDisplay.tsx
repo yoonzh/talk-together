@@ -12,6 +12,7 @@ interface TextDisplayProps {
     medial: string
     final: string
   }
+  keyboardVisible?: boolean
 }
 
 const TextDisplay: React.FC<TextDisplayProps> = ({ 
@@ -19,10 +20,34 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
   selectedPredicate, 
   onCompleteInput, 
   isComposing = false,
-  currentChar = { initial: '', medial: '', final: '' }
+  currentChar = { initial: '', medial: '', final: '' },
+  keyboardVisible = true
 }) => {
   
   const renderTextWithCursor = () => {
+    // 서술어가 선택된 경우 커서 없이 간단히 표시
+    if (selectedPredicate) {
+      // 서술어에서 중복된 입력 텍스트 제거
+      let displayPredicate = selectedPredicate
+      if (inputText && selectedPredicate.startsWith(inputText)) {
+        displayPredicate = selectedPredicate.substring(inputText.length)
+      }
+      
+      return (
+        <>
+          <span style={{ color: '#2196F3' }}>{inputText}</span>
+          <span style={{ color: '#4CAF50' }}>{displayPredicate}</span>
+        </>
+      )
+    }
+    
+    // 키보드가 숨겨진 경우 커서 없이 표시
+    if (!keyboardVisible) {
+      return (
+        <span style={{ color: '#2196F3' }}>{inputText}</span>
+      )
+    }
+    
     // 입력된 텍스트와 조합 중인 글자를 분리
     let displayText = inputText
     let currentComposingChar = ''
@@ -62,7 +87,7 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
             {currentComposingChar}
           </span>
         ) : (
-          // 입력 대기 또는 조합 완성: vertical bar 커서
+          // 입력 대기 또는 조합 완성: vertical bar 커서 (키보드 보일 때만)
           <span style={{
             color: '#2196F3',
             fontSize: '0.9em',
@@ -73,7 +98,6 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
             |
           </span>
         )}
-        <span style={{ color: '#4CAF50' }}>{selectedPredicate}</span>
       </>
     )
   }
