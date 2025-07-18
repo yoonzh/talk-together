@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import App from '../../App'
 
 describe('App - 기존 단어 유지 테스트', () => {
@@ -76,7 +76,7 @@ describe('App - 기존 단어 유지 테스트', () => {
     console.log('   말하기 버튼 클릭 후 텍스트:', currentText)
     
     // 3. ㄱ버튼이 활성화되었는지 확인하고 클릭
-    const keyboardToggleButton = screen.getByText('ㄱ')
+    const keyboardToggleButton = screen.getByText('ㄱ') as HTMLButtonElement
     console.log('3. ㄱ버튼 상태:', keyboardToggleButton.disabled ? 'disabled' : 'enabled')
     
     fireEvent.click(keyboardToggleButton)
@@ -108,11 +108,11 @@ describe('App - 기존 단어 유지 테스트', () => {
     render(<App />)
     
     // 말하기 버튼 찾기
-    const speakButton = screen.getByText('🗣️')
+    const speakButton = screen.getByText('🗣️') as HTMLButtonElement
     console.log('말하기 버튼 초기 상태:', speakButton.disabled ? 'disabled' : 'enabled')
     
     // ㄱ버튼 찾기
-    const keyboardToggleButton = screen.getByText('ㄱ')
+    const keyboardToggleButton = screen.getByText('ㄱ') as HTMLButtonElement
     console.log('ㄱ버튼 초기 상태:', keyboardToggleButton.disabled ? 'disabled' : 'enabled')
     
     // 말하기 버튼 클릭 시뮬레이션 (텍스트가 없어도)
