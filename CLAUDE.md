@@ -21,8 +21,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |-|-|-|
 |ㄱㅋ|ㄴㄹ|ㄷㅌ|
 |ㅂㅍ|ㅅㅎ|ㅈㅊ|
-|backspace|ㅇㅁ|newline|
-- backspace와 newline은 이모지로 표시
+|space|ㅇㅁ|backspace|
+- space(공백)와 backspace는 이모지로 표시 (⎵, ⌫)
 - 자음을 한번 클릭하면 첫번째 자음, 두번 클릭하면 두번째 자음, 세번 클릭하면 첫번째 자음의 쌍자음(단, ㄴ과 ㅇ은 쌍자음 없음). 네번째 클릭하면 첫번째 자음순으로 loop
 
 ### 천지인 모음 조합 테이블

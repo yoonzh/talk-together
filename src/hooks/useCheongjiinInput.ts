@@ -83,6 +83,24 @@ export const useCheongjiinInput = () => {
       return
     }
 
+    if (key === 'space') {
+      setState(prev => {
+        const assembled = prev.currentChar.initial && prev.currentChar.medial
+          ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
+          : ''
+        
+        return {
+          ...prev,
+          text: prev.text + assembled + ' ',
+          currentChar: { initial: '', medial: '', final: '' },
+          vowelSequence: [],
+          consonantClickCounts: {},
+          isComposing: false
+        }
+      })
+      return
+    }
+
     if (key === 'newline') {
       setState(prev => {
         const assembled = prev.currentChar.initial && prev.currentChar.medial

@@ -25,17 +25,20 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     setText
   }), [clearAll, commitCurrentChar, setText])
 
+  // AIDEV-NOTE: 키보드 레이아웃 - 아래줄이 공백|ㅇㅁ|백스페이스 순서로 구성됨
   const keyboardLayout = [
     ['ㅣ', 'ㆍ', 'ㅡ'],
     ['ㄱㅋ', 'ㄴㄹ', 'ㄷㅌ'],
     ['ㅂㅍ', 'ㅅㅎ', 'ㅈㅊ'],
-    ['backspace', 'ㅇㅁ', 'newline']
+    ['space', 'ㅇㅁ', 'backspace']
   ]
 
   const getKeyDisplay = (key: string) => {
     switch (key) {
       case 'backspace':
         return '⌫'
+      case 'space':
+        return '⎵'
       case 'newline':
         return '↵'
       default:
@@ -59,7 +62,7 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       justifyContent: 'center'
     }
 
-    if (key === 'backspace' || key === 'newline') {
+    if (key === 'backspace' || key === 'newline' || key === 'space') {
       return {
         ...baseStyle,
         backgroundColor: '#f0f0f0',
