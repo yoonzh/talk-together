@@ -32,11 +32,17 @@ export class OpenAIService {
     
     try {
       const prompt = this.createPrompt(noun)
+      console.log('=== AI 프롬프트 ===')
+      console.log(prompt)
+      console.log('=== AI 프롬프트 끝 ===')
       logAiService('OpenAI API 호출 시작')
       
       const response = await this.callOpenAI(prompt)
       
       if (response) {
+        console.log('=== AI 응답 ===')
+        console.log(response)
+        console.log('=== AI 응답 끝 ===')
         logAiService('OpenAI API 응답 성공, 파싱 시작')
         const result = this.parseResponse(response, noun)
         logAiService(`서술어 생성 완료: ${result.length}개 생성`)
