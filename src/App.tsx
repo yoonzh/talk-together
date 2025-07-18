@@ -67,7 +67,13 @@ const App: React.FC = () => {
     
     // 조합 완성 후 최종 텍스트로 음성 출력 (textChange 이벤트 후 업데이트된 inputText 사용)
     setTimeout(() => {
-      const fullSentence = inputText + selectedPredicate
+      // 서술어에서 중복된 입력 텍스트 제거
+      let displayPredicate = selectedPredicate
+      if (inputText && selectedPredicate.startsWith(inputText)) {
+        displayPredicate = selectedPredicate.substring(inputText.length)
+      }
+      
+      const fullSentence = inputText + displayPredicate
       if (fullSentence.trim()) {
         logSpeechOutput('음성 출력 시작', { sentence: fullSentence })
         const utterance = new SpeechSynthesisUtterance(fullSentence)
@@ -144,7 +150,14 @@ const App: React.FC = () => {
       }}>
         <div style={{ flex: 2 }}>
           <SpeechButton 
-            text={inputText + selectedPredicate}
+            text={(() => {
+              // 서술어에서 중복된 입력 텍스트 제거
+              let displayPredicate = selectedPredicate
+              if (inputText && selectedPredicate.startsWith(inputText)) {
+                displayPredicate = selectedPredicate.substring(inputText.length)
+              }
+              return inputText + displayPredicate
+            })()}
             onSpeak={handleSpeak}
           />
         </div>
