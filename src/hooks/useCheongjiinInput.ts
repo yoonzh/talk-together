@@ -171,10 +171,11 @@ export const useCheongjiinInput = () => {
         
         // 종성 위치에 자음을 입력하는 경우
         if (prev.currentChar.medial && !prev.currentChar.final) {
+          const finalConsonant = getConsonantByClick(key, 1) // 종성은 항상 첫 번째 자음
           return {
             ...prev,
-            currentChar: { ...prev.currentChar, final: consonant },
-            consonantClickCounts: { ...prev.consonantClickCounts, [key]: clickCount }
+            currentChar: { ...prev.currentChar, final: finalConsonant },
+            consonantClickCounts: { [key]: 1 } // 종성 입력 시 clickCount 초기화
           }
         }
         
@@ -230,10 +231,21 @@ export const useCheongjiinInput = () => {
     })
   }, [])
 
+  const setText = useCallback((newText: string) => {
+    setState({
+      text: newText,
+      currentChar: { initial: '', medial: '', final: '' },
+      vowelSequence: [],
+      consonantClickCounts: {},
+      isComposing: false
+    })
+  }, [])
+
   return {
     text: getFullText(),
     handleKeyPress,
     commitCurrentChar,
-    clearAll
+    clearAll,
+    setText
   }
 }

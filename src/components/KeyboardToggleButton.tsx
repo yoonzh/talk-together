@@ -1,22 +1,22 @@
 import React from 'react'
 
-interface ClearButtonProps {
-  onClear: () => void
+interface KeyboardToggleButtonProps {
+  onClick: () => void
   disabled?: boolean
 }
 
-const ClearButton: React.FC<ClearButtonProps> = ({ onClear, disabled = false }) => {
+const KeyboardToggleButton: React.FC<KeyboardToggleButtonProps> = ({ onClick, disabled = false }) => {
   return (
     <button
-      onClick={onClear}
+      onClick={onClick}
       disabled={disabled}
       style={{
         width: '100%',
         height: '60px',
-        fontSize: '18px',
+        fontSize: '24px',
         fontWeight: 'bold',
         color: disabled ? '#ccc' : '#fff',
-        backgroundColor: disabled ? '#f0f0f0' : '#ff4757',
+        backgroundColor: disabled ? '#f0f0f0' : '#4CAF50',
         border: 'none',
         borderRadius: '12px',
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -25,24 +25,24 @@ const ClearButton: React.FC<ClearButtonProps> = ({ onClear, disabled = false }) 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '8px'
+        opacity: disabled ? 0.3 : 1
       }}
       onMouseOver={(e) => {
         if (!disabled) {
-          e.currentTarget.style.backgroundColor = '#ff3838'
+          e.currentTarget.style.backgroundColor = '#45a049'
           e.currentTarget.style.transform = 'translateY(-1px)'
         }
       }}
       onMouseOut={(e) => {
         if (!disabled) {
-          e.currentTarget.style.backgroundColor = '#ff4757'
+          e.currentTarget.style.backgroundColor = '#4CAF50'
           e.currentTarget.style.transform = 'translateY(0)'
         }
       }}
     >
-      <span style={{ fontSize: '24px' }}>🧹</span>
+      ㄱ
     </button>
   )
 }
 
-export default ClearButton
+export default KeyboardToggleButton

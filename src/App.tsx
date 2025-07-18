@@ -4,13 +4,16 @@ import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
 import SpeechButton from './components/SpeechButton'
 import ClearButton from './components/ClearButton'
+import KeyboardToggleButton from './components/KeyboardToggleButton'
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('')
   const [selectedPredicate, setSelectedPredicate] = useState('')
   const [shouldGeneratePredicates, setShouldGeneratePredicates] = useState(false)
   const [shouldClearOnNextInput, setShouldClearOnNextInput] = useState(false)
-  const keyboardRef = useRef<{ clearAll: () => void; commitCurrentChar: () => void }>(null)
+  const [keyboardVisible, setKeyboardVisible] = useState(true)
+  const [keyboardReturnedViaButton, setKeyboardReturnedViaButton] = useState(false)
+  const keyboardRef = useRef<{ clearAll: () => void; commitCurrentChar: () => void; setText: (text: string) => void }>(null)
 
   const handleTextChange = (text: string) => {
     setInputText(text)
@@ -19,6 +22,13 @@ const App: React.FC = () => {
   }
 
   const handleKeyPress = () => {
+    // ㄱ버튼을 통한 복귀인 경우 초기화하지 않음
+    if (keyboardReturnedViaButton) {
+      setKeyboardReturnedViaButton(false)
+      setShouldClearOnNextInput(false)
+      return
+    }
+    
     // 말하기/소리내기 버튼 후 첫 입력 시 초기화
     if (shouldClearOnNextInput) {
       setInputText('')
@@ -59,6 +69,8 @@ const App: React.FC = () => {
     setShouldGeneratePredicates(true)
     // 말하기 버튼 클릭 후 다음 입력 시 초기화 설정
     setShouldClearOnNextInput(true)
+    // 키보드 숨기기
+    setKeyboardVisible(false)
   }
 
   return (
@@ -101,13 +113,30 @@ const App: React.FC = () => {
             disabled={!inputText.trim() && !selectedPredicate.trim()}
           />
         </div>
+        <div style={{ flex: 1 }}>
+          <KeyboardToggleButton 
+            onClick={() => {
+              setKeyboardVisible(true)
+              setKeyboardReturnedViaButton(true)
+              // 키보드가 다시 나타날 때 현재 텍스트를 키보드에 설정
+              setTimeout(() => {
+                if (keyboardRef.current && inputText) {
+                  keyboardRef.current.setText(inputText)
+                }
+              }, 0)
+            }}
+            disabled={keyboardVisible}
+          />
+        </div>
       </div>
       
-      <CheongjiinKeyboard 
-        ref={keyboardRef} 
-        onTextChange={handleTextChange} 
-        onKeyPress={handleKeyPress}
-      />
+      {keyboardVisible && (
+        <CheongjiinKeyboard 
+          ref={keyboardRef} 
+          onTextChange={handleTextChange} 
+          onKeyPress={handleKeyPress}
+        />
+      )}
     </div>
   )
 }
