@@ -23,6 +23,7 @@ export const assembleHangul = (initial: string, medial: string, final: string = 
   return String.fromCharCode(code)
 }
 
+
 export const disassembleHangul = (char: string): { initial: string; medial: string; final: string } => {
   const code = char.charCodeAt(0)
   

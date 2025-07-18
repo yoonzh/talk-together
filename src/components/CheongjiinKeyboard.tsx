@@ -4,7 +4,7 @@ import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 interface CheongjiinKeyboardProps {
   onTextChange: (text: string) => void
   onKeyPress?: () => void
-  onCompositionStateChange?: (state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } }) => void
+  onCompositionStateChange?: (state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string }; currentDisplayChar: string }) => void
 }
 
 interface CheongjiinKeyboardRef {
@@ -18,15 +18,15 @@ interface CheongjiinKeyboardRef {
 }
 
 const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress, onCompositionStateChange }, ref) => {
-  const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar } = useCheongjiinInput()
+  const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar, getCurrentDisplay } = useCheongjiinInput()
 
   useEffect(() => {
     onTextChange(text)
   }, [text, onTextChange])
 
   useEffect(() => {
-    onCompositionStateChange?.({ isComposing, currentChar })
-  }, [isComposing, currentChar, onCompositionStateChange])
+    onCompositionStateChange?.({ isComposing, currentChar, currentDisplayChar: getCurrentDisplay() })
+  }, [isComposing, currentChar, onCompositionStateChange, getCurrentDisplay])
 
   useImperativeHandle(ref, () => ({
     clearAll,

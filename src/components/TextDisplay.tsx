@@ -1,18 +1,13 @@
 import React from 'react'
 import CompleteInputButton from './CompleteInputButton'
-import { assembleHangul } from '../utils/hangulUtils'
 
 interface TextDisplayProps {
   inputText: string
   selectedPredicate: string
   onCompleteInput?: () => void
   isComposing?: boolean
-  currentChar?: {
-    initial: string
-    medial: string
-    final: string
-  }
   keyboardVisible?: boolean
+  currentDisplayChar?: string
 }
 
 const TextDisplay: React.FC<TextDisplayProps> = ({ 
@@ -20,8 +15,8 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
   selectedPredicate, 
   onCompleteInput, 
   isComposing = false,
-  currentChar = { initial: '', medial: '', final: '' },
-  keyboardVisible = true
+  keyboardVisible = true,
+  currentDisplayChar = ''
 }) => {
   
   const renderTextWithCursor = () => {
@@ -53,22 +48,21 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
     let currentComposingChar = ''
     
     // 조합 중인 글자가 있는지 확인
-    if (isComposing && (currentChar.initial || currentChar.medial || currentChar.final)) {
-      // 현재 조합 중인 글자가 inputText에 포함되어 있다면 분리
-      if (currentChar.initial && currentChar.medial) {
-        // getCurrentDisplay와 동일한 로직으로 조합 중인 글자 생성
-        currentComposingChar = assembleHangul(currentChar.initial, currentChar.medial, currentChar.final)
-        
-        // inputText에서 마지막 글자가 조합 중인 글자와 같다면 분리
-        if (displayText.endsWith(currentComposingChar)) {
-          displayText = displayText.slice(0, -currentComposingChar.length)
-        }
-      } else if (currentChar.initial) {
-        currentComposingChar = currentChar.initial
-        if (displayText.endsWith(currentComposingChar)) {
-          displayText = displayText.slice(0, -currentComposingChar.length)
-        }
+    if (isComposing && currentDisplayChar) {
+      currentComposingChar = currentDisplayChar
+      console.log('=== TextDisplay DEBUG ===')
+      console.log('inputText:', JSON.stringify(inputText))
+      console.log('currentDisplayChar:', JSON.stringify(currentDisplayChar))
+      console.log('displayText before:', JSON.stringify(displayText))
+      console.log('endsWith check:', displayText.endsWith(currentComposingChar))
+      
+      // inputText에서 마지막에 있는 currentDisplayChar를 제거 (중복 방지)
+      if (displayText.endsWith(currentComposingChar)) {
+        displayText = displayText.slice(0, -currentComposingChar.length)
       }
+      
+      console.log('displayText after:', JSON.stringify(displayText))
+      console.log('currentComposingChar:', JSON.stringify(currentComposingChar))
     }
     
     return (

@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [shouldClearOnNextInput, setShouldClearOnNextInput] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(true)
   const [keyboardReturnedViaButton, setKeyboardReturnedViaButton] = useState(false)
-  const [compositionState, setCompositionState] = useState({ isComposing: false, currentChar: { initial: '', medial: '', final: '' } })
+  const [compositionState, setCompositionState] = useState({ isComposing: false, currentChar: { initial: '', medial: '', final: '' }, currentDisplayChar: '' })
   const keyboardRef = useRef<{ 
     clearAll: () => void; 
     commitCurrentChar: () => void; 
@@ -27,7 +27,7 @@ const App: React.FC = () => {
     setShouldGeneratePredicates(false)
   }, [])
 
-  const handleCompositionStateChange = useCallback((state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } }) => {
+  const handleCompositionStateChange = useCallback((state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string }; currentDisplayChar: string }) => {
     setCompositionState(state)
   }, [])
 
@@ -130,8 +130,8 @@ const App: React.FC = () => {
         selectedPredicate={selectedPredicate}
         onCompleteInput={handleCompleteInput}
         isComposing={compositionState.isComposing}
-        currentChar={compositionState.currentChar}
         keyboardVisible={keyboardVisible}
+        currentDisplayChar={compositionState.currentDisplayChar}
       />
       
       <PredicateList 

@@ -170,6 +170,12 @@ export const useCheongjiinInput = () => {
           return prev
         }
         
+        // 'ㆍ'가 이미 2개 있는 경우 추가 입력 무시
+        if (key === 'ㆍ' && prev.vowelSequence.filter(v => v === 'ㆍ').length >= 2) {
+          console.log('ㆍ 입력 무시: 이미 2개 존재')
+          return prev
+        }
+        
         const newVowelSequence = [...prev.vowelSequence, key]
         const newMedial = combineVowel(newVowelSequence)
         
@@ -256,15 +262,48 @@ export const useCheongjiinInput = () => {
   }, [commitCurrentChar])
 
   const getCurrentDisplay = useCallback(() => {
+    console.log('=== getCurrentDisplay DEBUG ===')
+    console.log('isComposing:', state.isComposing)
+    console.log('currentChar:', state.currentChar)
+    console.log('vowelSequence:', state.vowelSequence)
+    
     if (state.isComposing && state.currentChar.initial) {
+      // 완전한 모음이 조합된 경우 정상 한글로 표시
       if (state.currentChar.medial) {
-        return assembleHangul(state.currentChar.initial, state.currentChar.medial, state.currentChar.final)
-      } else {
+        // 'ㆍ'가 단독으로 medial에 있고 vowelSequence가 1개인 경우는 중간 상태로 처리
+        if (state.currentChar.medial === 'ㆍ' && state.vowelSequence.length === 1) {
+          const result = state.currentChar.initial + state.vowelSequence.join('')
+          console.log('intermediate state (ㆍ):', result)
+          return result
+        }
+        // 'ㆍ'가 연속으로 나오는 경우 (ㆍㆍ) 중간 상태로 처리
+        else if (state.currentChar.medial === 'ㆍ' && state.vowelSequence.length === 2 && state.vowelSequence[0] === 'ㆍ' && state.vowelSequence[1] === 'ㆍ') {
+          const result = state.currentChar.initial + state.vowelSequence.join('')
+          console.log('intermediate state (ㆍㆍ):', result)
+          return result
+        }
+        // 그 외의 경우는 정상 한글로 조합
+        else {
+          const result = assembleHangul(state.currentChar.initial, state.currentChar.medial, state.currentChar.final)
+          console.log('assembled hangul:', result)
+          return result
+        }
+      }
+      // 천지인 조합 과정 중인 경우 중간 상태 그대로 표시
+      else if (state.vowelSequence.length > 0) {
+        const result = state.currentChar.initial + state.vowelSequence.join('')
+        console.log('intermediate state:', result)
+        return result
+      }
+      // 초성만 있는 경우
+      else {
+        console.log('initial only:', state.currentChar.initial)
         return state.currentChar.initial
       }
     }
+    console.log('returning empty string')
     return ''
-  }, [state.currentChar, state.isComposing])
+  }, [state.currentChar, state.isComposing, state.vowelSequence])
 
   const getFullText = useCallback(() => {
     return state.text + getCurrentDisplay()
@@ -299,6 +338,7 @@ export const useCheongjiinInput = () => {
     clearAll,
     setText,
     isComposing: state.isComposing,
-    currentChar: state.currentChar
+    currentChar: state.currentChar,
+    getCurrentDisplay
   }
 }
