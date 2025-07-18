@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { logUserAction, logKeyboardState, logSpeechOutput } from './utils/logger'
 import CheongjiinKeyboard from './components/CheongjiinKeyboard'
 import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
@@ -40,21 +41,26 @@ const App: React.FC = () => {
   }
 
   const handlePredicateSelect = (predicate: string) => {
+    logUserAction('서술어 선택', { predicate, inputText })
     setSelectedPredicate(predicate)
   }
 
   const handleSpeak = () => {
     const fullSentence = inputText + selectedPredicate
     if (fullSentence.trim()) {
+      logSpeechOutput('음성 출력 시작', { sentence: fullSentence })
       const utterance = new SpeechSynthesisUtterance(fullSentence)
       utterance.lang = 'ko-KR'
       speechSynthesis.speak(utterance)
+    } else {
+      logSpeechOutput('빈 텍스트로 인한 음성 출력 취소')
     }
     // 소리내기 버튼 클릭 후 다음 입력 시 초기화 설정
     setShouldClearOnNextInput(true)
   }
 
   const handleClearAll = () => {
+    logUserAction('전체 삭제', { inputText, selectedPredicate })
     setInputText('')
     setSelectedPredicate('')
     setShouldGeneratePredicates(false)
@@ -65,6 +71,8 @@ const App: React.FC = () => {
   const handleCompleteInput = () => {
     // 현재 입력 중인 문자를 완성시킴
     keyboardRef.current?.commitCurrentChar()
+    logUserAction('말하기 버튼 클릭', { inputText })
+    logKeyboardState('키보드 숨김')
     // 입력 완성 후 AI 서술어 생성 시작
     setShouldGeneratePredicates(true)
     // 말하기 버튼 클릭 후 다음 입력 시 초기화 설정
@@ -116,6 +124,8 @@ const App: React.FC = () => {
         <div style={{ flex: 1 }}>
           <KeyboardToggleButton 
             onClick={() => {
+              logUserAction('ㄱ버튼 클릭', { inputText })
+              logKeyboardState('키보드 복원', { preservedText: inputText })
               setKeyboardVisible(true)
               setKeyboardReturnedViaButton(true)
               // 키보드가 다시 나타날 때 현재 텍스트를 키보드에 설정

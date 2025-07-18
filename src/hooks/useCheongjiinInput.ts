@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { getConsonantByClick, combineVowel, isVowelKey, isConsonantKey } from '../utils/cheongjiinUtils'
 import { assembleHangul } from '../utils/hangulUtils'
+import { logCheongjiinInput } from '../utils/logger'
 
 interface InputState {
   text: string
@@ -41,6 +42,8 @@ export const useCheongjiinInput = () => {
   }, [])
 
   const handleKeyPress = useCallback((key: string) => {
+    logCheongjiinInput(`키 입력: ${key}`)
+    
     if (key === 'backspace') {
       setState(prev => {
         if (prev.isComposing) {

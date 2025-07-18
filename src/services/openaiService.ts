@@ -1,4 +1,5 @@
 import { processJosi } from '../utils/josiUtils'
+import { logAiService, logError } from '../utils/logger'
 
 interface PredicateCandidate {
   text: string
@@ -22,22 +23,31 @@ export class OpenAIService {
   }
   
   async generatePredicates(noun: string): Promise<PredicateCandidate[]> {
+    logAiService(`서술어 생성 시작: "${noun}"`)
+    
     if (!this.apiKey) {
-      console.warn('OpenAI API key not found, using local fallback')
+      logAiService('OpenAI API key not found, using local fallback')
       return this.getLocalFallback(noun)
     }
     
     try {
       const prompt = this.createPrompt(noun)
+      logAiService('OpenAI API 호출 시작')
+      
       const response = await this.callOpenAI(prompt)
       
       if (response) {
-        return this.parseResponse(response, noun)
+        logAiService('OpenAI API 응답 성공, 파싱 시작')
+        const result = this.parseResponse(response, noun)
+        logAiService(`서술어 생성 완료: ${result.length}개 생성`)
+        return result
       }
       
+      logAiService('OpenAI API 응답 없음, 로컬 폴백 사용')
       return this.getLocalFallback(noun)
     } catch (error) {
-      console.error('OpenAI API error:', error)
+      logError('OpenAI API error', error)
+      logAiService('API 오류로 인한 로컬 폴백 사용')
       return this.getLocalFallback(noun)
     }
   }
@@ -109,7 +119,7 @@ text는 명사를 포함한 완전한 문장으로 생성해주세요.
       const data = await response.json()
       return data.choices[0]?.message?.content || null
     } catch (error) {
-      console.error('OpenAI API call failed:', error)
+      logError('OpenAI API call failed', error)
       return null
     }
   }
@@ -129,7 +139,7 @@ text는 명사를 포함한 완전한 문장으로 생성해주세요.
       
       return []
     } catch (error) {
-      console.error('Failed to parse OpenAI response:', error)
+      logError('Failed to parse OpenAI response', error)
       return []
     }
   }
