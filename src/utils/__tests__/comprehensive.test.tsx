@@ -242,6 +242,45 @@ describe('종합 기능 테스트 스위트', () => {
       // Web Speech API 호출되지 않음 확인
       expect(mockSpeechSynthesis.speak).not.toHaveBeenCalled()
     })
+
+    it('TTS 서비스 에러 시 폴백 처리', async () => {
+      console.log('=== TTS 폴백 테스트 ===')
+      
+      // Mock TTS service to throw error
+      const originalCreateTTSService = require('../../services/ttsService').default.createTTSService
+      const mockTTSService = {
+        playAudio: vi.fn().mockRejectedValue(new Error('TTS Service Error'))
+      }
+      require('../../services/ttsService').default.createTTSService = vi.fn().mockReturnValue(mockTTSService)
+      
+      render(<App />)
+      
+      // "안녕" 입력
+      const ieungButton = screen.getByText('ㅇㅁ')
+      const hieuthButton = screen.getByText('ㅅㅎ')
+      
+      fireEvent.click(ieungButton) // ㅇ
+      fireEvent.click(ieungButton) // ㅏ (ㅣ + ㆍ)
+      const iButton = screen.getByText('ㅣ')
+      const dotButton = screen.getByText('ㆍ')
+      fireEvent.click(iButton)
+      fireEvent.click(dotButton)
+      fireEvent.click(hieuthButton) // ㄴ
+      
+      // 소리내기 버튼 클릭
+      const voiceButton = screen.getByText('🔊')
+      fireEvent.click(voiceButton)
+      
+      // 폴백으로 Web Speech API가 호출되어야 함
+      await waitFor(() => {
+        expect(mockSpeechSynthesis.speak).toHaveBeenCalled()
+      })
+      
+      console.log('TTS 폴백 처리 확인')
+      
+      // Restore original function
+      require('../../services/ttsService').default.createTTSService = originalCreateTTSService
+    })
   })
 
   describe('전체 삭제 기능', () => {

@@ -5,6 +5,7 @@ import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
 import SpeechButton from './components/SpeechButton'
 import KeyboardToggleButton from './components/KeyboardToggleButton'
+import TTSServiceFactory from './services/ttsService'
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('')
@@ -61,12 +62,12 @@ const App: React.FC = () => {
     setSelectedPredicate(predicate)
   }
 
-  const handleSpeak = () => {
+  const handleSpeak = async () => {
     // 먼저 조합 중인 글자가 있으면 완성
     commitComposingChar()
     
     // 조합 완성 후 최종 텍스트로 음성 출력 (textChange 이벤트 후 업데이트된 inputText 사용)
-    setTimeout(() => {
+    setTimeout(async () => {
       // 서술어에서 중복된 입력 텍스트 제거
       let displayPredicate = selectedPredicate
       if (inputText && selectedPredicate.startsWith(inputText)) {
@@ -75,10 +76,25 @@ const App: React.FC = () => {
       
       const fullSentence = inputText + displayPredicate
       if (fullSentence.trim()) {
-        logSpeechOutput('음성 출력 시작', { sentence: fullSentence })
-        const utterance = new SpeechSynthesisUtterance(fullSentence)
-        utterance.lang = 'ko-KR'
-        speechSynthesis.speak(utterance)
+        try {
+          // TTS 서비스 팩토리를 사용하여 적절한 TTS 서비스 선택
+          const ttsService = TTSServiceFactory.createTTSService()
+          await ttsService.playAudio(fullSentence)
+          
+          logSpeechOutput('음성 출력 완료', { sentence: fullSentence })
+        } catch (error) {
+          logSpeechOutput('음성 출력 실패, Web Speech API 폴백 시도', { sentence: fullSentence, error })
+          
+          // 폴백: 기본 Web Speech API 사용
+          try {
+            const utterance = new SpeechSynthesisUtterance(fullSentence)
+            utterance.lang = 'ko-KR'
+            speechSynthesis.speak(utterance)
+            logSpeechOutput('Web Speech API 폴백 성공', { sentence: fullSentence })
+          } catch (fallbackError) {
+            logSpeechOutput('모든 TTS 방법 실패', { sentence: fullSentence, error: fallbackError })
+          }
+        }
       } else {
         logSpeechOutput('빈 텍스트로 인한 음성 출력 취소')
       }

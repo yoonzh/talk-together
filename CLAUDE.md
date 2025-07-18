@@ -132,18 +132,65 @@ The app supports multiple AI providers for real-time predicate generation. To en
 ✅ 천지인 키보드 (3x4 레이아웃)
 ✅ 한글 조합 로직 (초성+중성+종성)
 ✅ AI 기반 서술어 후보 생성 시스템
-✅ 음성 출력 기능 (Web Speech API)
+✅ 향상된 음성 출력 기능 (Web Speech API + Gemini TTS)
 ✅ 반응형 모바일 디자인
 ✅ 유닛 테스트 (Vitest)
 ✅ 실시간 AI 서술어 생성 (OpenAI GPT-3.5)
+✅ Gemini 2.5 Flash TTS 통합 (환경 변수 기반)
 
 ### Technology Stack
 - React 19.1.0
 - TypeScript 5.8.3
 - Vite 7.0.4
 - Vitest (testing)
-- Web Speech API (음성 출력)
-- OpenAI GPT-3.5 (AI 서술어 생성)
+- Web Speech API + Gemini TTS (음성 출력)
+- OpenAI GPT-3.5 + Gemini 2.5 Flash (AI 서술어 생성)
+
+## TTS (Text-to-Speech) 기능
+
+### 음성 출력 시스템
+앱은 두 가지 TTS 시스템을 지원합니다:
+
+1. **Web Speech API** (기본값)
+   - 브라우저 내장 TTS 엔진 사용
+   - 별도 API 키 불필요
+   - 즉시 사용 가능
+
+2. **Gemini 2.5 Flash TTS** (향상된 기능)
+   - AI 기반 텍스트 전처리로 더 자연스러운 음성
+   - 자폐장애인을 위한 맞춤형 텍스트 최적화
+   - 어려운 표현을 쉬운 말로 변환
+   - 발음하기 어려운 단어 개선
+
+### TTS 설정 방법
+환경 변수 `GEMINI_TTS`를 사용하여 TTS 시스템을 선택할 수 있습니다:
+
+```bash
+# .env 파일 설정
+GEMINI_TTS=TRUE   # Gemini TTS 사용
+GEMINI_TTS=FALSE  # Web Speech API 사용 (기본값)
+```
+
+### TTS 서비스 아키텍처
+```
+TTSServiceFactory
+├── WebSpeechTTSService (기본)
+│   └── 브라우저 내장 Web Speech API 사용
+└── EnhancedGeminiTTSService (향상된)
+    ├── Gemini API를 통한 텍스트 전처리
+    ├── 자폐장애인 맞춤형 텍스트 최적화
+    └── Web Speech API로 최종 음성 출력
+```
+
+### 폴백 시스템
+- Gemini TTS 실패 시 자동으로 Web Speech API 사용
+- 네트워크 오류나 API 제한 시에도 안정적 동작
+- 에러 로깅을 통한 문제 추적
+
+### 테스트 커버리지
+- 두 TTS 시스템의 단위 테스트
+- 폴백 시스템 테스트
+- 긴 텍스트 및 특수 문자 처리 테스트
 
 ## 주요 결정사항 (Project Decisions)
 
