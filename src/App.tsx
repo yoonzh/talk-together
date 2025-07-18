@@ -119,7 +119,7 @@ const App: React.FC = () => {
 
   return (
     <div style={{ 
-      height: '100%',
+      height: '100vh',
       display: 'flex', 
       flexDirection: 'column',
       backgroundColor: '#f0f8ff',

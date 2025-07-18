@@ -101,7 +101,7 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       backgroundColor: '#f5f5f5',
       borderTop: '2px solid #e0e0e0',
       flexShrink: 0, /* 키보드 크기 고정 */
-      paddingBottom: 'calc(20px + var(--safe-area-inset-bottom))' /* 아이폰 하단 여백 */
+      paddingBottom: 'calc(35px + var(--safe-area-inset-bottom))' /* 아이폰 하단 여백 증가 */
     }}>
       <div style={{
         display: 'grid',
