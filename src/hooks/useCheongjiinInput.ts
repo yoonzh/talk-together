@@ -13,6 +13,7 @@ interface InputState {
   vowelSequence: string[]
   consonantClickCounts: Record<string, number>
   isComposing: boolean
+  lastSpaceTime: number
 }
 
 export const useCheongjiinInput = () => {
@@ -21,7 +22,8 @@ export const useCheongjiinInput = () => {
     currentChar: { initial: '', medial: '', final: '' },
     vowelSequence: [],
     consonantClickCounts: {},
-    isComposing: false
+    isComposing: false,
+    lastSpaceTime: 0
   })
 
   const commitCurrentChar = useCallback(() => {
@@ -34,7 +36,8 @@ export const useCheongjiinInput = () => {
           currentChar: { initial: '', medial: '', final: '' },
           vowelSequence: [],
           consonantClickCounts: {},
-          isComposing: false
+          isComposing: false,
+          lastSpaceTime: 0
         }
       }
       return prev
@@ -85,17 +88,41 @@ export const useCheongjiinInput = () => {
 
     if (key === 'space') {
       setState(prev => {
+        const currentTime = Date.now()
         const assembled = prev.currentChar.initial && prev.currentChar.medial
           ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
           : ''
         
-        return {
-          ...prev,
-          text: prev.text + assembled + ' ',
-          currentChar: { initial: '', medial: '', final: '' },
-          vowelSequence: [],
-          consonantClickCounts: {},
-          isComposing: false
+        // 현재 조합 중인 글자가 있는지 확인
+        const hasCurrentChar = prev.currentChar.initial || prev.currentChar.medial || prev.currentChar.final
+        
+        // 이전 space키 입력으로부터 짧은 시간(500ms) 내에 다시 space키가 눌렸는지 확인
+        const isQuickSecondSpace = !hasCurrentChar && (currentTime - prev.lastSpaceTime) < 500
+        
+        if (hasCurrentChar) {
+          // 조합 중인 글자가 있을 때: 현재 글자를 완성하고 조합 상태 종료
+          return {
+            ...prev,
+            text: prev.text + assembled,
+            currentChar: { initial: '', medial: '', final: '' },
+            vowelSequence: [],
+            consonantClickCounts: {},
+            isComposing: false,
+            lastSpaceTime: currentTime
+          }
+        } else if (isQuickSecondSpace) {
+          // 빠른 연속 space키: 띄어쓰기 추가
+          return {
+            ...prev,
+            text: prev.text + ' ',
+            lastSpaceTime: 0 // 리셋
+          }
+        } else {
+          // 첫 번째 space키 (조합 완성 후): 아무것도 하지 않음
+          return {
+            ...prev,
+            lastSpaceTime: currentTime
+          }
         }
       })
       return
@@ -147,6 +174,7 @@ export const useCheongjiinInput = () => {
         const newMedial = combineVowel(newVowelSequence)
         
         if (newMedial) {
+          // 모음이 성공적으로 조합되면 계속 조합 중 상태 유지
           return {
             ...prev,
             vowelSequence: newVowelSequence,
@@ -248,7 +276,8 @@ export const useCheongjiinInput = () => {
       currentChar: { initial: '', medial: '', final: '' },
       vowelSequence: [],
       consonantClickCounts: {},
-      isComposing: false
+      isComposing: false,
+      lastSpaceTime: 0
     })
   }, [])
 
@@ -258,7 +287,8 @@ export const useCheongjiinInput = () => {
       currentChar: { initial: '', medial: '', final: '' },
       vowelSequence: [],
       consonantClickCounts: {},
-      isComposing: false
+      isComposing: false,
+      lastSpaceTime: 0
     })
   }, [])
 

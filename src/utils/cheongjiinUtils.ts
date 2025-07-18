@@ -53,3 +53,24 @@ export const isVowelKey = (key: string): boolean => {
 export const isConsonantKey = (key: string): boolean => {
   return Object.keys(consonantMap).includes(key)
 }
+
+export const canExtendVowelSequence = (vowelSequence: string[]): boolean => {
+  const currentKey = vowelSequence.join('')
+  
+  // 현재 시퀀스가 유효한 모음을 만들어야 함
+  if (!cheongjiinVowelMap[currentKey]) {
+    return false
+  }
+  
+  // 더 긴 조합이 가능한지 확인
+  const vowelKeys = ['ㅣ', 'ㅡ', 'ㆍ']
+  
+  for (const nextKey of vowelKeys) {
+    const extendedKey = currentKey + nextKey
+    if (cheongjiinVowelMap[extendedKey]) {
+      return true
+    }
+  }
+  
+  return false
+}
