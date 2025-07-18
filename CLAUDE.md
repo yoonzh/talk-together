@@ -63,22 +63,41 @@ This project is built with React, TypeScript, and Vite. To get started:
 
 1. Install dependencies: `npm install`
 2. Copy environment variables: `cp .env.example .env`
-3. Edit `.env` file and add your OpenAI API key (optional)
+3. Edit `.env` file and add your AI API keys (optional):
+   - `GEMINI_API_KEY` for Gemini 2.5 Flash-Lite (recommended)
+   - `OPENAI_API_KEY` for OpenAI GPT-3.5 Turbo
 4. Start development server: `npm run dev`
 5. Run tests: `npm test`
 6. Build for production: `npm run build`
 
 ## AI Configuration
 
-The app uses OpenAI GPT-3.5 for real-time predicate generation. To enable AI features:
+The app supports multiple AI providers for real-time predicate generation. To enable AI features:
 
+### Option 1: Gemini 2.5 Flash-Lite (Recommended)
+1. Get a Gemini API key from https://ai.google.dev/
+2. Add it to your `.env` file:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+### Option 2: OpenAI GPT-3.5 Turbo
 1. Get an OpenAI API key from https://platform.openai.com/api-keys
 2. Add it to your `.env` file:
    ```
-   VITE_OPENAI_API_KEY=your_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
-3. The app will automatically use AI-generated predicates when available
-4. If no API key is provided, it falls back to local predicate generation
+
+### API Priority
+- If both keys are provided, Gemini will be used as the primary AI service
+- If Gemini fails, the app automatically falls back to OpenAI
+- If no API keys are provided, it uses local predicate generation
+
+### Features
+- Real-time Korean sentence generation for autism communication aid
+- Context-aware predicate suggestions based on input nouns
+- Automatic Korean particle (조사) processing
+- Request-type sentences prioritized for communication assistance
 
 ## Common Commands
 

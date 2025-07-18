@@ -286,6 +286,31 @@ export const useCheongjiinInput = () => {
         else {
           const result = assembleHangul(state.currentChar.initial, state.currentChar.medial, state.currentChar.final)
           console.log('assembled hangul:', result)
+          
+          // assembleHangul이 실패하면 (비표준 조합) 분해된 형태로 표시
+          if (!result && state.currentChar.initial && state.currentChar.medial) {
+            // 종성이 없는 경우: 모두 분해 (예: 대ㅐ)
+            if (!state.currentChar.final) {
+              const decomposed = state.currentChar.initial + state.currentChar.medial
+              console.log('non-standard medial composition, showing decomposed:', decomposed)
+              return decomposed
+            }
+            // 종성이 있는 경우: 초성+중성 조합 후 종성만 분해 (예: 비ㅉ)
+            else {
+              const baseChar = assembleHangul(state.currentChar.initial, state.currentChar.medial, '')
+              if (baseChar) {
+                const decomposed = baseChar + state.currentChar.final
+                console.log('non-standard final composition, showing base + final:', decomposed)
+                return decomposed
+              } else {
+                // 초성+중성도 안되면 모두 분해
+                const decomposed = state.currentChar.initial + state.currentChar.medial + state.currentChar.final
+                console.log('fully non-standard composition, showing fully decomposed:', decomposed)
+                return decomposed
+              }
+            }
+          }
+          
           return result
         }
       }

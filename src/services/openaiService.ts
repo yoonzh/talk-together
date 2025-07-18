@@ -1,5 +1,6 @@
 import { processJosi } from '../utils/josiUtils'
 import { logAiService, logError } from '../utils/logger'
+import GeminiService from './geminiService'
 
 interface PredicateCandidate {
   text: string
@@ -9,10 +10,26 @@ interface PredicateCandidate {
 
 export class OpenAIService {
   private static instance: OpenAIService
-  private apiKey: string
+  private openaiApiKey: string
+  private geminiApiKey: string
+  private geminiService: GeminiService | null = null
   
   private constructor() {
-    this.apiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
+    this.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
+    this.geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || ''
+    
+    console.log('=== API Keys Debug ===')
+    console.log('OpenAI Key exists:', !!this.openaiApiKey)
+    console.log('Gemini Key exists:', !!this.geminiApiKey)
+    console.log('OpenAI Key length:', this.openaiApiKey.length)
+    console.log('Gemini Key length:', this.geminiApiKey.length)
+    
+    if (this.geminiApiKey) {
+      this.geminiService = new GeminiService(this.geminiApiKey)
+      console.log('Gemini service created')
+    } else {
+      console.log('No Gemini API key, skipping Gemini service')
+    }
   }
   
   public static getInstance(): OpenAIService {
@@ -25,8 +42,20 @@ export class OpenAIService {
   async generatePredicates(noun: string): Promise<PredicateCandidate[]> {
     logAiService(`서술어 생성 시작: "${noun}"`)
     
-    if (!this.apiKey) {
-      logAiService('OpenAI API key not found, using local fallback')
+    // Gemini가 설정되어 있으면 우선 사용
+    if (this.geminiService) {
+      try {
+        logAiService('Gemini API 사용')
+        return await this.geminiService.generatePredicates(noun)
+      } catch (error) {
+        logError('Gemini API failed, falling back to OpenAI', error)
+        // Gemini 실패 시 OpenAI로 폴백
+      }
+    }
+    
+    // OpenAI 사용
+    if (!this.openaiApiKey) {
+      logAiService('No API keys found, using local fallback')
       return this.getLocalFallback(noun)
     }
     
@@ -99,7 +128,7 @@ text는 완전한 문장으로 생성해주세요.
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${this.openaiApiKey}`
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
