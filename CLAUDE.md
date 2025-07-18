@@ -88,6 +88,11 @@ The app supports multiple AI providers for real-time predicate generation. To en
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
+### Environment Variables
+- **Local Development**: Use `OPENAI_API_KEY` and `GEMINI_API_KEY` in your `.env` file
+- **Production (Vercel)**: Set environment variables without any prefix in Vercel dashboard
+- **Legacy Support**: `VITE_OPENAI_API_KEY` and `VITE_GEMINI_API_KEY` are still supported for backward compatibility
+
 ### API Priority
 - If both keys are provided, Gemini will be used as the primary AI service
 - If Gemini fails, the app automatically falls back to OpenAI

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import App from '../../App'
+import { logUserAction } from '../logger'
 
 // Mock Web Speech API
 const mockSpeechSynthesis = {
@@ -275,17 +276,14 @@ describe('종합 기능 테스트 스위트', () => {
   })
 
   describe('로깅 시스템', () => {
-    it('개발 환경에서 디버깅 로그 출력', () => {
+    it('프로덕션 환경에서도 운영 로그 출력', () => {
       const consoleSpy = vi.spyOn(console, 'log')
       
-      render(<App />)
+      // 직접 로그 함수 테스트
+      logUserAction('테스트 액션', { test: 'data' })
       
-      // 키 입력으로 로그 발생 유도
-      const bButton = screen.getByText('ㅂㅍ')
-      fireEvent.click(bButton)
-      
-      // 개발 환경에서는 로그가 출력되어야 함
-      expect(consoleSpy).toHaveBeenCalled()
+      // 프로덕션 환경에서도 운영 로그가 출력되어야 함
+      expect(consoleSpy).toHaveBeenCalledWith('[USER_ACTION] 테스트 액션', { test: 'data' })
       
       consoleSpy.mockRestore()
     })
