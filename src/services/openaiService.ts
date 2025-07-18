@@ -55,9 +55,13 @@ export class OpenAIService {
   private createPrompt(noun: string): string {
     return `
 당신은 자폐장애인(4-7세 지능 수준)을 위한 의사소통 보조 시스템입니다.
-명사 "${noun}"에 대해 자연스럽고 실용적인 서술어 후보 4개를 생성해주세요.
+명사 "${noun}"에 대해 자연스럽고 실용적인 서술어 후보 6개를 생성해주세요.
 
-요구사항:
+중요한 순서 요구사항:
+1. 첫 번째와 두 번째 문장은 반드시 요청형 문장이어야 합니다 (가고싶어요, 하고싶어요, 주세요, 도와주세요 등)
+2. 나머지 3-6번째 문장은 감정, 상태, 특성 등을 표현하는 문장
+
+일반 요구사항:
 1. 자폐장애인이 일상에서 자주 사용할 만한 표현
 2. 간단하고 이해하기 쉬운 문장
 3. 각 서술어마다 적절한 이모지 1개
@@ -65,11 +69,13 @@ export class OpenAIService {
 5. 해당 명사와 관련된 구체적인 행동, 상태, 감정을 표현하세요
 6. 조사를 자연스럽게 사용하되, 문법적으로 올바른 형태로 생성하세요
 7. 카테고리는 해당 문장의 의미에 맞는 한국어로 표현하세요
+8. 반드시 한국어 문법에 맞는 자연스러운 문장으로 생성하세요
+9. 어색하거나 부자연스러운 표현은 절대 금지합니다
 
 예시:
-- "자동차" → "자동차를 타고 가요", "자동차가 빨라요", "자동차를 운전해요", "자동차가 멋져요"
-- "병원" → "병원에 가야 해요", "병원에서 치료받아요", "병원이 무서워요", "병원 선생님이 좋아요"
-- "수영" → "수영을 배우고 싶어요", "수영이 재미있어요", "수영장에 가고 싶어요", "수영을 잘해요"
+- "집" → "집에 가고 싶어요", "집에 데려다 주세요", "집이 좋아요", "집이 따뜻해요", "집에 있어요", "집이 크네요"
+- "물" → "물을 주세요", "물을 마시고 싶어요", "물이 맛있어요", "물이 차가워요", "물이 필요해요", "물을 마셔요"
+- "놀이터" → "놀이터에 가고 싶어요", "놀이터에서 놀고 싶어요", "놀이터가 좋아요", "놀이터가 재미있어요", "놀이터가 넓어요", "놀이터에 있어요"
 
 출력 형식 (JSON):
 text는 명사를 포함한 완전한 문장으로 생성해주세요.
@@ -78,7 +84,9 @@ text는 명사를 포함한 완전한 문장으로 생성해주세요.
     {"text": "자동차를 타고 가요", "emoji": "🚗", "category": "이동"},
     {"text": "자동차가 빨라요", "emoji": "💨", "category": "특성"},
     {"text": "자동차를 운전해요", "emoji": "🚙", "category": "행동"},
-    {"text": "자동차가 멋져요", "emoji": "✨", "category": "감정"}
+    {"text": "자동차가 멋져요", "emoji": "✨", "category": "감정"},
+    {"text": "자동차를 씻어요", "emoji": "🧼", "category": "관리"},
+    {"text": "자동차가 크네요", "emoji": "📏", "category": "특성"}
   ]
 }
 
@@ -152,46 +160,56 @@ text는 명사를 포함한 완전한 문장으로 생성해주세요.
     switch (category) {
       case 'place':
         basePredicates = [
-          { text: '에 가고 싶어요', emoji: '🚶', category: '장소' },
-          { text: '에 있어요', emoji: '🏠', category: '위치' },
+          { text: '에 가고 싶어요', emoji: '🚶', category: '요청' },
+          { text: '에 데려다 주세요', emoji: '🚗', category: '요청' },
           { text: '이/가 좋아요', emoji: '😊', category: '감정' },
-          { text: '에서 쉬고 싶어요', emoji: '😴', category: '휴식' }
+          { text: '에서 쉬고 싶어요', emoji: '😴', category: '휴식' },
+          { text: '에 도착했어요', emoji: '🎯', category: '도착' },
+          { text: '이/가 깨끗해요', emoji: '✨', category: '상태' }
         ]
         break
       
       case 'food':
         basePredicates = [
-          { text: '을/를 먹고 싶어요', emoji: '🍽️', category: '음식' },
-          { text: '이/가 맛있어요', emoji: '😋', category: '맛' },
           { text: '을/를 주세요', emoji: '🤲', category: '요청' },
-          { text: '이/가 필요해요', emoji: '🤗', category: '필요' }
+          { text: '을/를 먹고 싶어요', emoji: '🍽️', category: '요청' },
+          { text: '이/가 맛있어요', emoji: '😋', category: '맛' },
+          { text: '이/가 필요해요', emoji: '🤗', category: '필요' },
+          { text: '을/를 만들어 주세요', emoji: '👨‍🍳', category: '요리' },
+          { text: '이/가 따뜻해요', emoji: '🔥', category: '온도' }
         ]
         break
       
       case 'activity':
         basePredicates = [
-          { text: '을/를 하고 싶어요', emoji: '🙌', category: '활동' },
+          { text: '을/를 하고 싶어요', emoji: '🙌', category: '요청' },
+          { text: '을/를 배우고 싶어요', emoji: '📚', category: '요청' },
           { text: '이/가 좋아요', emoji: '😊', category: '감정' },
           { text: '이/가 재미있어요', emoji: '😄', category: '기분' },
-          { text: '을/를 배우고 싶어요', emoji: '📚', category: '학습' }
+          { text: '이/가 어려워요', emoji: '😰', category: '난이도' },
+          { text: '을/를 하고 있어요', emoji: '⏰', category: '진행' }
         ]
         break
       
       case 'person':
         basePredicates = [
+          { text: '을/를 만나고 싶어요', emoji: '🤗', category: '요청' },
+          { text: '을/를 도와주세요', emoji: '🙏', category: '요청' },
           { text: '이/가 좋아요', emoji: '😊', category: '감정' },
-          { text: '을/를 만나고 싶어요', emoji: '🤗', category: '만남' },
           { text: '이/가 보고 싶어요', emoji: '💕', category: '그리움' },
-          { text: '을/를 도와주세요', emoji: '🙏', category: '도움' }
+          { text: '이/가 친절해요', emoji: '😇', category: '성격' },
+          { text: '과/와 놀고 싶어요', emoji: '🎉', category: '놀이' }
         ]
         break
       
       default:
         basePredicates = [
+          { text: '을/를 주세요', emoji: '🤲', category: '요청' },
+          { text: '을/를 도와주세요', emoji: '🙏', category: '요청' },
           { text: '이/가 좋아요', emoji: '😊', category: '감정' },
-          { text: '이/가 필요해요', emoji: '🤲', category: '필요' },
+          { text: '이/가 필요해요', emoji: '🤗', category: '필요' },
           { text: '을/를 원해요', emoji: '🙌', category: '바람' },
-          { text: '을/를 도와주세요', emoji: '🙏', category: '도움' }
+          { text: '이/가 예쁘네요', emoji: '🌸', category: '외관' }
         ]
     }
     
