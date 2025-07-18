@@ -70,8 +70,22 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
           fontSize: '18px',
           color: '#666'
         }}>
-          <div style={{ marginRight: '10px' }}>🤖</div>
-          AI가 서술어를 생성하고 있습니다...
+          <style>
+            {`
+              @keyframes loadingDots {
+                0%, 20% { opacity: 0; }
+                50% { opacity: 1; }
+                80%, 100% { opacity: 0; }
+              }
+              .loading-dot-1 { animation: loadingDots 1.4s infinite 0s; }
+              .loading-dot-2 { animation: loadingDots 1.4s infinite 0.2s; }
+              .loading-dot-3 { animation: loadingDots 1.4s infinite 0.4s; }
+            `}
+          </style>
+          똑똑이🤖가 어떤 말을 할지 생각 중이에요
+          <span className="loading-dot-1">.</span>
+          <span className="loading-dot-2">.</span>
+          <span className="loading-dot-3">.</span>
         </div>
       )}
       
