@@ -13,7 +13,7 @@ const KeyboardToggleButton: React.FC<KeyboardToggleButtonProps> = ({ onClick, di
       style={{
         width: '100%',
         height: '60px',
-        fontSize: '24px',
+        fontSize: '18px',
         fontWeight: 'bold',
         color: disabled ? '#ccc' : '#fff',
         backgroundColor: disabled ? '#f0f0f0' : '#4CAF50',
@@ -40,7 +40,7 @@ const KeyboardToggleButton: React.FC<KeyboardToggleButtonProps> = ({ onClick, di
         }
       }}
     >
-#️⃣
+[ㄱㅋ] 글자
     </button>
   )
 }

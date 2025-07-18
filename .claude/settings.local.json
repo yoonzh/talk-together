@@ -21,7 +21,8 @@
       "Bash(npm run preview:*)",
       "Bash(timeout 30 npm test -- --run src/utils/__tests__/buttonComposition.test.tsx)",
       "Bash(kill:*)",
-      "Bash(timeout 15 npx vitest run src/utils/__tests__/buttonComposition.test.tsx --no-coverage)"
+      "Bash(timeout 15 npx vitest run src/utils/__tests__/buttonComposition.test.tsx --no-coverage)",
+      "Bash(vercel:*)"
     ],
     "deny": []
   }

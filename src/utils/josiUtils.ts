@@ -57,15 +57,15 @@ export const processJosi = (word: string, predicate: string): string => {
   
   // 조사 패턴 매칭 및 교체
   const josiPatterns = [
-    { pattern: /을\/를/, replacement: addJosi(word, 'eul').slice(word.length) },
-    { pattern: /이\/가/, replacement: addJosi(word, 'i').slice(word.length) },
-    { pattern: /와\/과/, replacement: addJosi(word, 'wa').slice(word.length) },
-    { pattern: /을(?=\s)/, replacement: addJosi(word, 'eul').slice(word.length) },
-    { pattern: /를(?=\s)/, replacement: addJosi(word, 'eul').slice(word.length) },
-    { pattern: /이(?=\s)/, replacement: addJosi(word, 'i').slice(word.length) },
-    { pattern: /가(?=\s)/, replacement: addJosi(word, 'i').slice(word.length) },
-    { pattern: /와(?=\s)/, replacement: addJosi(word, 'wa').slice(word.length) },
-    { pattern: /과(?=\s)/, replacement: addJosi(word, 'wa').slice(word.length) }
+    { pattern: /을\/를/, replacement: addJosi(word, 'eul') },
+    { pattern: /이\/가/, replacement: addJosi(word, 'i') },
+    { pattern: /와\/과/, replacement: addJosi(word, 'wa') },
+    { pattern: /을(?=\s)/, replacement: addJosi(word, 'eul') },
+    { pattern: /를(?=\s)/, replacement: addJosi(word, 'eul') },
+    { pattern: /이(?=\s)/, replacement: addJosi(word, 'i') },
+    { pattern: /가(?=\s)/, replacement: addJosi(word, 'i') },
+    { pattern: /와(?=\s)/, replacement: addJosi(word, 'wa') },
+    { pattern: /과(?=\s)/, replacement: addJosi(word, 'wa') }
   ]
   
   let result = predicate
