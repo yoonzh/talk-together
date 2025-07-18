@@ -19,21 +19,28 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
+    console.log('=== PredicateList useEffect ===')
+    console.log('inputText:', inputText)
+    console.log('shouldGenerate:', shouldGenerate)
+    
     const generatePredicates = async () => {
       if (!inputText.trim() || !shouldGenerate) {
+        console.log('Skipping predicate generation:', { inputText: inputText.trim(), shouldGenerate })
         setPredicates([])
         return
       }
       
+      console.log('Starting predicate generation for:', inputText.trim())
       setLoading(true)
       setError(null)
       
       try {
         const aiPredicates = await openaiService.generatePredicates(inputText.trim())
+        console.log('Generated predicates:', aiPredicates)
         setPredicates(aiPredicates)
       } catch (err) {
-        setError('서술어 생성에 실패했습니다')
         console.error('Predicate generation error:', err)
+        setError('서술어 생성에 실패했습니다')
       } finally {
         setLoading(false)
       }

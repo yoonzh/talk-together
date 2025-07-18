@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { logUserAction, logKeyboardState, logSpeechOutput } from './utils/logger'
 import CheongjiinKeyboard from './components/CheongjiinKeyboard'
 import PredicateList from './components/PredicateList'
@@ -14,13 +14,23 @@ const App: React.FC = () => {
   const [shouldClearOnNextInput, setShouldClearOnNextInput] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(true)
   const [keyboardReturnedViaButton, setKeyboardReturnedViaButton] = useState(false)
-  const keyboardRef = useRef<{ clearAll: () => void; commitCurrentChar: () => void; setText: (text: string) => void }>(null)
+  const [compositionState, setCompositionState] = useState({ isComposing: false, currentChar: { initial: '', medial: '', final: '' } })
+  const keyboardRef = useRef<{ 
+    clearAll: () => void; 
+    commitCurrentChar: () => void; 
+    setText: (text: string) => void;
+    getCompositionState: () => { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } };
+  }>(null)
 
-  const handleTextChange = (text: string) => {
+  const handleTextChange = useCallback((text: string) => {
     setInputText(text)
     // 텍스트가 변경되면 서술어 생성 비활성화
     setShouldGeneratePredicates(false)
-  }
+  }, [])
+
+  const handleCompositionStateChange = useCallback((state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } }) => {
+    setCompositionState(state)
+  }, [])
 
   const handleKeyPress = () => {
     // ㄱ버튼을 통한 복귀인 경우 초기화하지 않음
@@ -40,23 +50,36 @@ const App: React.FC = () => {
     }
   }
 
+  // 조합 중인 글자가 있으면 완성하는 헬퍼 함수
+  const commitComposingChar = () => {
+    if (compositionState.isComposing && keyboardRef.current) {
+      keyboardRef.current.commitCurrentChar()
+    }
+  }
+
   const handlePredicateSelect = (predicate: string) => {
     logUserAction('서술어 선택', { predicate, inputText })
     setSelectedPredicate(predicate)
   }
 
   const handleSpeak = () => {
-    const fullSentence = inputText + selectedPredicate
-    if (fullSentence.trim()) {
-      logSpeechOutput('음성 출력 시작', { sentence: fullSentence })
-      const utterance = new SpeechSynthesisUtterance(fullSentence)
-      utterance.lang = 'ko-KR'
-      speechSynthesis.speak(utterance)
-    } else {
-      logSpeechOutput('빈 텍스트로 인한 음성 출력 취소')
-    }
-    // 소리내기 버튼 클릭 후 다음 입력 시 초기화 설정
-    setShouldClearOnNextInput(true)
+    // 먼저 조합 중인 글자가 있으면 완성
+    commitComposingChar()
+    
+    // 조합 완성 후 최종 텍스트로 음성 출력 (textChange 이벤트 후 업데이트된 inputText 사용)
+    setTimeout(() => {
+      const fullSentence = inputText + selectedPredicate
+      if (fullSentence.trim()) {
+        logSpeechOutput('음성 출력 시작', { sentence: fullSentence })
+        const utterance = new SpeechSynthesisUtterance(fullSentence)
+        utterance.lang = 'ko-KR'
+        speechSynthesis.speak(utterance)
+      } else {
+        logSpeechOutput('빈 텍스트로 인한 음성 출력 취소')
+      }
+      // 소리내기 버튼 클릭 후 다음 입력 시 초기화 설정
+      setShouldClearOnNextInput(true)
+    }, 0)
   }
 
   const handleClearAll = () => {
@@ -69,16 +92,24 @@ const App: React.FC = () => {
   }
 
   const handleCompleteInput = () => {
-    // 현재 입력 중인 문자를 완성시킴
-    keyboardRef.current?.commitCurrentChar()
-    logUserAction('말하기 버튼 클릭', { inputText })
-    logKeyboardState('키보드 숨김')
-    // 입력 완성 후 AI 서술어 생성 시작
-    setShouldGeneratePredicates(true)
-    // 말하기 버튼 클릭 후 다음 입력 시 초기화 설정
-    setShouldClearOnNextInput(true)
-    // 키보드 숨기기
-    setKeyboardVisible(false)
+    // 먼저 조합 중인 글자가 있으면 완성
+    commitComposingChar()
+    
+    // 조합 완성 후 상태 업데이트를 위한 지연 처리
+    setTimeout(() => {
+      console.log('=== handleCompleteInput DEBUG ===')
+      console.log('Current inputText:', inputText)
+      console.log('Setting shouldGeneratePredicates to true')
+      
+      logUserAction('말하기 버튼 클릭', { inputText })
+      logKeyboardState('키보드 숨김')
+      // 입력 완성 후 AI 서술어 생성 시작
+      setShouldGeneratePredicates(true)
+      // 말하기 버튼 클릭 후 다음 입력 시 초기화 설정
+      setShouldClearOnNextInput(true)
+      // 키보드 숨기기
+      setKeyboardVisible(false)
+    }, 50) // 50ms로 늘려서 텍스트 업데이트 완료 후 처리
   }
 
   return (
@@ -93,6 +124,8 @@ const App: React.FC = () => {
         inputText={inputText} 
         selectedPredicate={selectedPredicate}
         onCompleteInput={handleCompleteInput}
+        isComposing={compositionState.isComposing}
+        currentChar={compositionState.currentChar}
       />
       
       <PredicateList 
@@ -124,6 +157,9 @@ const App: React.FC = () => {
         <div style={{ flex: 1 }}>
           <KeyboardToggleButton 
             onClick={() => {
+              // 먼저 조합 중인 글자가 있으면 완성
+              commitComposingChar()
+              
               logUserAction('ㄱ버튼 클릭', { inputText })
               logKeyboardState('키보드 복원', { preservedText: inputText })
               setKeyboardVisible(true)
@@ -145,6 +181,7 @@ const App: React.FC = () => {
           ref={keyboardRef} 
           onTextChange={handleTextChange} 
           onKeyPress={handleKeyPress}
+          onCompositionStateChange={handleCompositionStateChange}
         />
       )}
     </div>

@@ -4,26 +4,36 @@ import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 interface CheongjiinKeyboardProps {
   onTextChange: (text: string) => void
   onKeyPress?: () => void
+  onCompositionStateChange?: (state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } }) => void
 }
 
 interface CheongjiinKeyboardRef {
   clearAll: () => void
   commitCurrentChar: () => void
   setText: (text: string) => void
+  getCompositionState: () => { 
+    isComposing: boolean; 
+    currentChar: { initial: string; medial: string; final: string }
+  }
 }
 
-const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress }, ref) => {
-  const { text, handleKeyPress, clearAll, commitCurrentChar, setText } = useCheongjiinInput()
+const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress, onCompositionStateChange }, ref) => {
+  const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar } = useCheongjiinInput()
 
   useEffect(() => {
     onTextChange(text)
   }, [text, onTextChange])
 
+  useEffect(() => {
+    onCompositionStateChange?.({ isComposing, currentChar })
+  }, [isComposing, currentChar, onCompositionStateChange])
+
   useImperativeHandle(ref, () => ({
     clearAll,
     commitCurrentChar,
-    setText
-  }), [clearAll, commitCurrentChar, setText])
+    setText,
+    getCompositionState: () => ({ isComposing, currentChar })
+  }), [clearAll, commitCurrentChar, setText, isComposing, currentChar])
 
   // AIDEV-NOTE: 키보드 레이아웃 - 아래줄이 공백|ㅇㅁ|백스페이스 순서로 구성됨
   const keyboardLayout = [

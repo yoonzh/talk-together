@@ -297,6 +297,8 @@ export const useCheongjiinInput = () => {
     handleKeyPress,
     commitCurrentChar,
     clearAll,
-    setText
+    setText,
+    isComposing: state.isComposing,
+    currentChar: state.currentChar
   }
 }
