@@ -59,7 +59,13 @@ const App: React.FC = () => {
 
   const handlePredicateSelect = (predicate: string) => {
     logUserAction('서술어 선택', { predicate, inputText })
+    
+    // 입력 텍스트를 삭제하고 선택한 문장으로 완전히 대체
+    setInputText('')
     setSelectedPredicate(predicate)
+    
+    // 키보드 상태도 초기화
+    keyboardRef.current?.clearAll()
   }
 
   const handleSpeak = async () => {
@@ -68,13 +74,9 @@ const App: React.FC = () => {
     
     // 조합 완성 후 최종 텍스트로 음성 출력 (textChange 이벤트 후 업데이트된 inputText 사용)
     setTimeout(async () => {
-      // 서술어에서 중복된 입력 텍스트 제거
-      let displayPredicate = selectedPredicate
-      if (inputText && selectedPredicate.startsWith(inputText)) {
-        displayPredicate = selectedPredicate.substring(inputText.length)
-      }
+      // 서술어가 선택되었으면 서술어를 사용, 아니면 입력 텍스트 사용
+      const fullSentence = selectedPredicate || inputText
       
-      const fullSentence = inputText + displayPredicate
       if (fullSentence.trim()) {
         try {
           // TTS 서비스 팩토리를 사용하여 적절한 TTS 서비스 선택
@@ -162,14 +164,7 @@ const App: React.FC = () => {
       }}>
         <div style={{ flex: 2 }}>
           <SpeechButton 
-            text={(() => {
-              // 서술어에서 중복된 입력 텍스트 제거
-              let displayPredicate = selectedPredicate
-              if (inputText && selectedPredicate.startsWith(inputText)) {
-                displayPredicate = selectedPredicate.substring(inputText.length)
-              }
-              return inputText + displayPredicate
-            })()}
+            text={selectedPredicate || inputText}
             onSpeak={handleSpeak}
           />
         </div>
