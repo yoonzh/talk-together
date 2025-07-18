@@ -60,23 +60,23 @@ describe('josiUtils', () => {
 
   describe('processJosi', () => {
     it('should process 을/를 patterns correctly', () => {
-      expect(processJosi('밥', '을/를 먹고 싶어요')).toBe('을 먹고 싶어요')
-      expect(processJosi('케이크', '을/를 먹고 싶어요')).toBe('를 먹고 싶어요')
-      expect(processJosi('물', '을 마시고 싶어요')).toBe('을 마시고 싶어요')
-      expect(processJosi('커피', '를 마시고 싶어요')).toBe('를 마시고 싶어요')
+      expect(processJosi('밥', '을/를 먹고 싶어요')).toBe('밥을 먹고 싶어요')
+      expect(processJosi('케이크', '을/를 먹고 싶어요')).toBe('케이크를 먹고 싶어요')
+      expect(processJosi('물', '을 마시고 싶어요')).toBe('물을 마시고 싶어요')
+      expect(processJosi('커피', '를 마시고 싶어요')).toBe('커피를 마시고 싶어요')
     })
 
     it('should process 이/가 patterns correctly', () => {
-      expect(processJosi('밥', '이/가 맛있어요')).toBe('이 맛있어요')
-      expect(processJosi('케이크', '이/가 맛있어요')).toBe('가 맛있어요')
-      expect(processJosi('물', '이 차가워요')).toBe('이 차가워요')
-      expect(processJosi('커피', '가 뜨거워요')).toBe('가 뜨거워요')
+      expect(processJosi('밥', '이/가 맛있어요')).toBe('밥이 맛있어요')
+      expect(processJosi('케이크', '이/가 맛있어요')).toBe('케이크가 맛있어요')
+      expect(processJosi('물', '이 차가워요')).toBe('물이 차가워요')
+      expect(processJosi('커피', '가 뜨거워요')).toBe('커피가 뜨거워요')
     })
 
     it('should process 와/과 patterns correctly', () => {
-      expect(processJosi('친구', '와/과 놀고 싶어요')).toBe('와 놀고 싶어요')
-      expect(processJosi('엄마', '와/과 놀고 싶어요')).toBe('와 놀고 싶어요')
-      expect(processJosi('아빠', '와/과 놀고 싶어요')).toBe('와 놀고 싶어요')
+      expect(processJosi('친구', '와/과 놀고 싶어요')).toBe('친구와 놀고 싶어요')
+      expect(processJosi('엄마', '와/과 놀고 싶어요')).toBe('엄마와 놀고 싶어요')
+      expect(processJosi('아빠', '와/과 놀고 싶어요')).toBe('아빠와 놀고 싶어요')
     })
 
     it('should handle empty inputs', () => {

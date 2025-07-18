@@ -55,22 +55,28 @@ export const addJosi = (word: string, josiType: 'eul' | 'i' | 'e' | 'wa'): strin
 export const processJosi = (word: string, predicate: string): string => {
   if (!word || !predicate) return predicate
   
-  // 조사 패턴 매칭 및 교체
+  const hasFinal = hasFinalConsonant(word)
+  
+  // 조사 패턴 매칭 및 교체 (단어 + 조사 형태로 교체)
+  // 더 구체적인 패턴부터 먼저 매칭하고, 한 번 교체되면 중단
   const josiPatterns = [
-    { pattern: /을\/를/, replacement: addJosi(word, 'eul') },
-    { pattern: /이\/가/, replacement: addJosi(word, 'i') },
-    { pattern: /와\/과/, replacement: addJosi(word, 'wa') },
-    { pattern: /을(?=\s)/, replacement: addJosi(word, 'eul') },
-    { pattern: /를(?=\s)/, replacement: addJosi(word, 'eul') },
-    { pattern: /이(?=\s)/, replacement: addJosi(word, 'i') },
-    { pattern: /가(?=\s)/, replacement: addJosi(word, 'i') },
-    { pattern: /와(?=\s)/, replacement: addJosi(word, 'wa') },
-    { pattern: /과(?=\s)/, replacement: addJosi(word, 'wa') }
+    { pattern: /을\/를/, replacement: word + (hasFinal ? '을' : '를') },
+    { pattern: /이\/가/, replacement: word + (hasFinal ? '이' : '가') },
+    { pattern: /와\/과/, replacement: word + (hasFinal ? '과' : '와') },
+    { pattern: /을(?=\s)/, replacement: word + (hasFinal ? '을' : '를') },
+    { pattern: /를(?=\s)/, replacement: word + (hasFinal ? '을' : '를') },
+    { pattern: /이(?=\s)/, replacement: word + (hasFinal ? '이' : '가') },
+    { pattern: /가(?=\s)/, replacement: word + (hasFinal ? '이' : '가') },
+    { pattern: /와(?=\s)/, replacement: word + (hasFinal ? '과' : '와') },
+    { pattern: /과(?=\s)/, replacement: word + (hasFinal ? '과' : '와') }
   ]
   
   let result = predicate
   for (const { pattern, replacement } of josiPatterns) {
-    result = result.replace(pattern, replacement)
+    if (pattern.test(result)) {
+      result = result.replace(pattern, replacement)
+      break // 첫 번째 매칭 후 중단
+    }
   }
   
   return result
