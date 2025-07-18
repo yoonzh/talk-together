@@ -102,10 +102,6 @@ const App: React.FC = () => {
     
     // 조합 완성 후 상태 업데이트를 위한 지연 처리
     setTimeout(() => {
-      console.log('=== handleCompleteInput DEBUG ===')
-      console.log('Current inputText:', inputText)
-      console.log('Setting shouldGeneratePredicates to true')
-      
       logUserAction('말하기 버튼 클릭', { inputText })
       logKeyboardState('키보드 숨김')
       // 입력 완성 후 AI 서술어 생성 시작

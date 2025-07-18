@@ -120,7 +120,8 @@ The app supports multiple AI providers for real-time predicate generation. To en
 - **cheongjiinUtils.ts** - 천지인 키 매핑 및 모음 조합
 - **useCheongjiinInput.ts** - 천지인 입력 상태 관리 훅
 - **openaiService.ts** - OpenAI API를 통한 실시간 서술어 생성
-- **aiService.ts** - AI 서비스 추상화 레이어
+- **geminiService.ts** - Gemini API를 통한 실시간 서술어 생성
+- **promptTemplates.ts** - AI 서비스용 공통 프롬프트 템플릿
 
 ### Features Implemented
 ✅ 천지인 키보드 (3x4 레이아웃)

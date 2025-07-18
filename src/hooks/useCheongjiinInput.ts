@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { getConsonantByClick, combineVowel, isVowelKey, isConsonantKey } from '../utils/cheongjiinUtils'
 import { assembleHangul } from '../utils/hangulUtils'
-import { logCheongjiinInput } from '../utils/logger'
 
 interface InputState {
   text: string
@@ -45,8 +44,6 @@ export const useCheongjiinInput = () => {
   }, [])
 
   const handleKeyPress = useCallback((key: string) => {
-    logCheongjiinInput(`키 입력: ${key}`)
-    
     if (key === 'backspace') {
       setState(prev => {
         if (prev.isComposing) {
@@ -172,7 +169,6 @@ export const useCheongjiinInput = () => {
         
         // 'ㆍ'가 이미 2개 있는 경우 추가 입력 무시
         if (key === 'ㆍ' && prev.vowelSequence.filter(v => v === 'ㆍ').length >= 2) {
-          console.log('ㆍ 입력 무시: 이미 2개 존재')
           return prev
         }
         
@@ -262,37 +258,28 @@ export const useCheongjiinInput = () => {
   }, [commitCurrentChar])
 
   const getCurrentDisplay = useCallback(() => {
-    console.log('=== getCurrentDisplay DEBUG ===')
-    console.log('isComposing:', state.isComposing)
-    console.log('currentChar:', state.currentChar)
-    console.log('vowelSequence:', state.vowelSequence)
-    
     if (state.isComposing && state.currentChar.initial) {
       // 완전한 모음이 조합된 경우 정상 한글로 표시
       if (state.currentChar.medial) {
         // 'ㆍ'가 단독으로 medial에 있고 vowelSequence가 1개인 경우는 중간 상태로 처리
         if (state.currentChar.medial === 'ㆍ' && state.vowelSequence.length === 1) {
           const result = state.currentChar.initial + state.vowelSequence.join('')
-          console.log('intermediate state (ㆍ):', result)
           return result
         }
         // 'ㆍ'가 연속으로 나오는 경우 (ㆍㆍ) 중간 상태로 처리
         else if (state.currentChar.medial === 'ㆍ' && state.vowelSequence.length === 2 && state.vowelSequence[0] === 'ㆍ' && state.vowelSequence[1] === 'ㆍ') {
           const result = state.currentChar.initial + state.vowelSequence.join('')
-          console.log('intermediate state (ㆍㆍ):', result)
           return result
         }
         // 그 외의 경우는 정상 한글로 조합
         else {
           const result = assembleHangul(state.currentChar.initial, state.currentChar.medial, state.currentChar.final)
-          console.log('assembled hangul:', result)
           
           // assembleHangul이 실패하면 (비표준 조합) 분해된 형태로 표시
           if (!result && state.currentChar.initial && state.currentChar.medial) {
             // 종성이 없는 경우: 모두 분해 (예: 대ㅐ)
             if (!state.currentChar.final) {
               const decomposed = state.currentChar.initial + state.currentChar.medial
-              console.log('non-standard medial composition, showing decomposed:', decomposed)
               return decomposed
             }
             // 종성이 있는 경우: 초성+중성 조합 후 종성만 분해 (예: 비ㅉ)
@@ -300,12 +287,10 @@ export const useCheongjiinInput = () => {
               const baseChar = assembleHangul(state.currentChar.initial, state.currentChar.medial, '')
               if (baseChar) {
                 const decomposed = baseChar + state.currentChar.final
-                console.log('non-standard final composition, showing base + final:', decomposed)
                 return decomposed
               } else {
                 // 초성+중성도 안되면 모두 분해
                 const decomposed = state.currentChar.initial + state.currentChar.medial + state.currentChar.final
-                console.log('fully non-standard composition, showing fully decomposed:', decomposed)
                 return decomposed
               }
             }
@@ -317,16 +302,13 @@ export const useCheongjiinInput = () => {
       // 천지인 조합 과정 중인 경우 중간 상태 그대로 표시
       else if (state.vowelSequence.length > 0) {
         const result = state.currentChar.initial + state.vowelSequence.join('')
-        console.log('intermediate state:', result)
         return result
       }
       // 초성만 있는 경우
       else {
-        console.log('initial only:', state.currentChar.initial)
         return state.currentChar.initial
       }
     }
-    console.log('returning empty string')
     return ''
   }, [state.currentChar, state.isComposing, state.vowelSequence])
 

@@ -18,28 +18,32 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [modelSwitchMessage, setModelSwitchMessage] = useState<string | null>(null)
   useEffect(() => {
-    console.log('=== PredicateList useEffect ===')
-    console.log('inputText:', inputText)
-    console.log('shouldGenerate:', shouldGenerate)
-    
     const generatePredicates = async () => {
       if (!inputText.trim() || !shouldGenerate) {
-        console.log('Skipping predicate generation:', { inputText: inputText.trim(), shouldGenerate })
         setPredicates([])
         return
       }
       
-      console.log('Starting predicate generation for:', inputText.trim())
       setLoading(true)
       setError(null)
       
       try {
         const aiPredicates = await openaiService.generatePredicates(inputText.trim())
-        console.log('Generated predicates:', aiPredicates)
+        
+        // 모델 전환 키워드인 경우 빈 배열이 반환되므로 UI 메시지 처리
+        const normalized = inputText.trim().toLowerCase()
+        if ((normalized === '챗지피티' || normalized === 'chatgpt') && aiPredicates.length === 0) {
+          setModelSwitchMessage('이제부터 똑똑이로 ChatGPT를 사용합니다.')
+          setTimeout(() => setModelSwitchMessage(null), 5000)
+        } else if ((normalized === '제미나이' || normalized === 'gemini') && aiPredicates.length === 0) {
+          setModelSwitchMessage('이제부터 똑똑이로 Gemini를 사용합니다.')
+          setTimeout(() => setModelSwitchMessage(null), 5000)
+        }
+        
         setPredicates(aiPredicates)
       } catch (err) {
-        console.error('Predicate generation error:', err)
         setError('서술어 생성에 실패했습니다')
       } finally {
         setLoading(false)
@@ -61,6 +65,34 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
       overflowY: 'auto',
       minHeight: 0 /* flex 자식에서 스크롤 활성화 */
     }}>
+      {modelSwitchMessage && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '120px',
+          fontSize: '20px',
+          fontWeight: 'bold',
+          color: '#2196F3',
+          backgroundColor: '#e3f2fd',
+          border: '2px solid #2196F3',
+          borderRadius: '12px',
+          margin: '20px',
+          animation: 'fadeIn 0.5s ease-in-out'
+        }}>
+          <style>
+            {`
+              @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+              }
+            `}
+          </style>
+          <span style={{ marginRight: '10px' }}>🤖</span>
+          {modelSwitchMessage}
+        </div>
+      )}
+
       {loading && (
         <div style={{
           display: 'flex',

@@ -50,19 +50,11 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
     // 조합 중인 글자가 있는지 확인
     if (isComposing && currentDisplayChar) {
       currentComposingChar = currentDisplayChar
-      console.log('=== TextDisplay DEBUG ===')
-      console.log('inputText:', JSON.stringify(inputText))
-      console.log('currentDisplayChar:', JSON.stringify(currentDisplayChar))
-      console.log('displayText before:', JSON.stringify(displayText))
-      console.log('endsWith check:', displayText.endsWith(currentComposingChar))
       
       // inputText에서 마지막에 있는 currentDisplayChar를 제거 (중복 방지)
       if (displayText.endsWith(currentComposingChar)) {
         displayText = displayText.slice(0, -currentComposingChar.length)
       }
-      
-      console.log('displayText after:', JSON.stringify(displayText))
-      console.log('currentComposingChar:', JSON.stringify(currentComposingChar))
     }
     
     return (
