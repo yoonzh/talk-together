@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import openaiService from '../services/openaiService'
 
+const getCategoryKorean = (category: string): string => {
+  const categoryMap: Record<string, string> = {
+    'place': '장소',
+    'food': '음식',
+    'activity': '활동',
+    'person': '사람',
+    'general': '일반'
+  }
+  return categoryMap[category] || category
+}
+
 interface PredicateCandidate {
   text: string
   emoji: string
@@ -124,7 +135,7 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
                 color: '#888',
                 opacity: 0.7
               }}>
-                {predicate.category}
+                {getCategoryKorean(predicate.category)}
               </div>
             </button>
           ))}
