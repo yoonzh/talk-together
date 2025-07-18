@@ -330,7 +330,7 @@ describe('종합 기능 테스트 스위트', () => {
       
       // 3. 서술어 로딩 상태 확인 (AI 서비스 호출)
       await waitFor(() => {
-        const loadingText = screen.queryByText('AI가 서술어를 생성하고 있습니다...')
+        screen.queryByText('AI가 서술어를 생성하고 있습니다...')
         // 로딩 상태가 나타날 수 있음 (API 키가 없으면 바로 로컬 폴백)
       }, { timeout: 1000 })
       

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import TextDisplay from '../../components/TextDisplay'
 
 // AIDEV-NOTE: 커서 기능 테스트 - 입력 상태별 커서 스타일 확인
@@ -21,7 +21,6 @@ describe('커서 기능 테스트', () => {
     expect(cursor).toBeInTheDocument()
     
     // 커서 스타일 확인
-    const cursorStyle = window.getComputedStyle(cursor)
     expect(cursor).toHaveStyle({ color: '#2196F3' })
     
     console.log('입력 대기 상태 커서 테스트 완료')
