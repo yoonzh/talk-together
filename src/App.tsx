@@ -60,8 +60,9 @@ const App: React.FC = () => {
   const handlePredicateSelect = (predicate: string) => {
     logUserAction('서술어 선택', { predicate, inputText })
     
+    // AIDEV-NOTE: 서술어 선택 후에도 목록이 유지되도록 inputText를 지우지 않음
     // 입력 텍스트를 삭제하고 선택한 문장으로 완전히 대체
-    setInputText('')
+    // setInputText('') // 이 줄을 주석 처리하여 서술어 목록 유지
     setSelectedPredicate(predicate)
     
     // 키보드 상태도 초기화

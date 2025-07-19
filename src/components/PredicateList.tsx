@@ -22,7 +22,10 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
   useEffect(() => {
     const generatePredicates = async () => {
       if (!inputText.trim() || !shouldGenerate) {
-        setPredicates([])
+        // AIDEV-NOTE: shouldGenerate가 false일 때 기존 목록을 유지하여 사용자가 다른 서술어를 선택할 수 있도록 함
+        if (!inputText.trim()) {
+          setPredicates([])
+        }
         return
       }
       
@@ -52,8 +55,6 @@ const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSel
     
     if (shouldGenerate) {
       generatePredicates()
-    } else {
-      setPredicates([])
     }
   }, [inputText, shouldGenerate])
 
