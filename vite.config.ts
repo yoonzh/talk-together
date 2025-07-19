@@ -35,7 +35,8 @@ export default defineConfig(({ mode }) => {
     // .env 파일과 Vercel 환경변수 모두 지원
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY || env.VITE_OPENAI_API_KEY),
     'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY),
-    'import.meta.env.VITE_GEMINI_TTS': JSON.stringify(env.GEMINI_TTS || env.VITE_GEMINI_TTS)
+    'import.meta.env.VITE_TTS_MODULE': JSON.stringify(env.TTS_MODULE || env.VITE_TTS_MODULE),
+    'import.meta.env.VITE_GCP_API_KEY': JSON.stringify(env.GCP_API_KEY || env.VITE_GCP_API_KEY)
   }
 }
 })

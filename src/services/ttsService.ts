@@ -1,5 +1,6 @@
-import { logSpeechOutput, logError } from '../utils/logger'
+import { logError } from '../utils/logger'
 import GeminiTTSService, { TTSOptions } from './geminiTtsService'
+import GoogleCloudTTSService from './googleCloudTtsService'
 
 export interface ITTSService {
   playAudio(text: string, options?: Partial<TTSOptions>): Promise<void>
@@ -8,8 +9,6 @@ export interface ITTSService {
 export class WebSpeechTTSService implements ITTSService {
   async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
     try {
-      logSpeechOutput('Web Speech API 음성 출력 시작', { text })
-      
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'ko-KR'
       utterance.rate = options?.speed || 1.0
@@ -20,7 +19,6 @@ export class WebSpeechTTSService implements ITTSService {
       const koreanVoice = voices.find(voice => voice.lang.startsWith('ko'))
       if (koreanVoice) {
         utterance.voice = koreanVoice
-        logSpeechOutput('한국어 음성 선택됨', { voiceName: koreanVoice.name })
       }
 
       speechSynthesis.speak(utterance)
@@ -57,16 +55,36 @@ export class EnhancedGeminiTTSService implements ITTSService {
   }
 }
 
+export class GoogleCloudTTSServiceWrapper implements ITTSService {
+  private googleCloudTTS: GoogleCloudTTSService
+
+  constructor(apiKey: string) {
+    this.googleCloudTTS = new GoogleCloudTTSService(apiKey)
+  }
+
+  async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
+    try {
+      await this.googleCloudTTS.playAudio(text, options)
+    } catch (error) {
+      logError('Google Cloud TTS 서비스 실패', error)
+      throw error
+    }
+  }
+}
+
 export class TTSServiceFactory {
   static createTTSService(): ITTSService {
-    const useGeminiTTS = import.meta.env.VITE_GEMINI_TTS === 'TRUE'
-    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY
+    // TTS_MODULE 환경 변수 확인 (GEMINI_TTS, GCP_TTS, 또는 기본값)
+    const ttsModule = import.meta.env.VITE_TTS_MODULE || import.meta.env.TTS_MODULE
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY
+    const googleTtsApiKey = import.meta.env.VITE_GCP_API_KEY || import.meta.env.GCP_API_KEY
 
-    if (useGeminiTTS && geminiApiKey) {
-      logSpeechOutput('Gemini TTS 서비스 초기화')
+    // AIDEV-NOTE: TTS 모듈 선택 로직 - 환경변수 TTS_MODULE에 따라 다른 TTS 서비스 사용
+    if (ttsModule === 'GEMINI_TTS' && geminiApiKey) {
       return new EnhancedGeminiTTSService(geminiApiKey)
+    } else if (ttsModule === 'GCP_TTS' && googleTtsApiKey) {
+      return new GoogleCloudTTSServiceWrapper(googleTtsApiKey)
     } else {
-      logSpeechOutput('Web Speech API 서비스 초기화')
       return new WebSpeechTTSService()
     }
   }

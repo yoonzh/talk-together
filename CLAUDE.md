@@ -149,26 +149,40 @@ The app supports multiple AI providers for real-time predicate generation. To en
 ## TTS (Text-to-Speech) 기능
 
 ### 음성 출력 시스템
-앱은 두 가지 TTS 시스템을 지원합니다:
+앱은 세 가지 TTS 시스템을 지원합니다:
 
 1. **Web Speech API** (기본값)
    - 브라우저 내장 TTS 엔진 사용
    - 별도 API 키 불필요
    - 즉시 사용 가능
 
-2. **Gemini 2.5 Flash TTS** (향상된 기능)
+2. **Gemini 2.5 Flash TTS** (향상된 텍스트 전처리)
    - AI 기반 텍스트 전처리로 더 자연스러운 음성
    - 자폐장애인을 위한 맞춤형 텍스트 최적화
    - 어려운 표현을 쉬운 말로 변환
    - 발음하기 어려운 단어 개선
+   - 최종 음성 출력은 Web Speech API 사용
+
+3. **Google Cloud TTS** (고품질 음성 합성)
+   - Google Cloud Text-to-Speech API 사용
+   - 고품질 한국어 음성 합성
+   - MP3 형태의 오디오 스트리밍
+   - 다양한 음성 옵션 지원
 
 ### TTS 설정 방법
-환경 변수 `GEMINI_TTS`를 사용하여 TTS 시스템을 선택할 수 있습니다:
+환경 변수 `TTS_MODULE`을 사용하여 TTS 시스템을 선택합니다:
 
 ```bash
 # .env 파일 설정
-GEMINI_TTS=TRUE   # Gemini TTS 사용
-GEMINI_TTS=FALSE  # Web Speech API 사용 (기본값)
+TTS_MODULE=GEMINI_TTS      # Gemini TTS 사용 (텍스트 전처리)
+TTS_MODULE=GCP_TTS         # Google Cloud TTS 사용 (고품질 음성)
+# TTS_MODULE 설정하지 않으면 Web Speech API 사용 (기본값)
+
+# Google Cloud Platform API 키 (TTS_MODULE=GCP_TTS일 때 필요)
+GCP_API_KEY=your_gcp_api_key_here
+
+# Gemini API 키 (TTS_MODULE=GEMINI_TTS일 때 필요)
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### TTS 서비스 아키텍처
@@ -176,21 +190,35 @@ GEMINI_TTS=FALSE  # Web Speech API 사용 (기본값)
 TTSServiceFactory
 ├── WebSpeechTTSService (기본)
 │   └── 브라우저 내장 Web Speech API 사용
-└── EnhancedGeminiTTSService (향상된)
-    ├── Gemini API를 통한 텍스트 전처리
-    ├── 자폐장애인 맞춤형 텍스트 최적화
-    └── Web Speech API로 최종 음성 출력
+├── EnhancedGeminiTTSService (텍스트 전처리)
+│   ├── Gemini API를 통한 텍스트 전처리
+│   ├── 자폐장애인 맞춤형 텍스트 최적화
+│   └── Web Speech API로 최종 음성 출력
+└── GoogleCloudTTSServiceWrapper (고품질 음성)
+    ├── Google Cloud TTS API 호출
+    ├── Base64 오디오 데이터 수신
+    └── HTML5 Audio 엘리먼트로 재생
 ```
 
+### 환경 변수 우선순위
+1. `TTS_MODULE` 환경 변수 확인
+2. 해당 모듈에 필요한 API 키 확인
+3. API 키가 없으면 Web Speech API로 폴백
+
 ### 폴백 시스템
-- Gemini TTS 실패 시 자동으로 Web Speech API 사용
-- 네트워크 오류나 API 제한 시에도 안정적 동작
-- 에러 로깅을 통한 문제 추적
+- 선택된 TTS 서비스 실패 시 에러 발생 (자동 폴백 없음)
+- 환경 설정이 잘못된 경우에만 Web Speech API로 폴백
+- 네트워크 오류나 API 제한 시 에러 로깅
 
 ### 테스트 커버리지
-- 두 TTS 시스템의 단위 테스트
-- 폴백 시스템 테스트
+- 세 가지 TTS 시스템의 단위 테스트
+- TTSServiceFactory의 환경 변수 기반 서비스 선택 테스트
+- Google Cloud TTS API 응답 처리 테스트
 - 긴 텍스트 및 특수 문자 처리 테스트
+
+### 참고사항
+- `TTS_MODULE` 환경 변수를 통한 통합된 TTS 모듈 선택 방식 사용
+- 레거시 `GEMINI_TTS` 환경 변수는 제거됨 (v1.1.0부터)
 
 ## 주요 결정사항 (Project Decisions)
 

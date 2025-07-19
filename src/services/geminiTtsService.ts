@@ -1,4 +1,4 @@
-import { logSpeechOutput, logError } from '../utils/logger'
+import { logError } from '../utils/logger'
 
 export interface TTSOptions {
   text: string
@@ -17,8 +17,6 @@ export class GeminiTTSService {
 
   async generateSpeech(options: TTSOptions): Promise<AudioBuffer> {
     try {
-      logSpeechOutput('Gemini TTS 음성 생성 시작', { text: options.text })
-
       const prompt = this.createTTSPrompt(options)
       
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
@@ -47,7 +45,6 @@ export class GeminiTTSService {
       }
 
       const data = await response.json()
-      logSpeechOutput('Gemini TTS API 응답 받음', { hasContent: !!data.candidates })
 
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
         const responseText = data.candidates[0].content.parts[0].text
@@ -79,12 +76,6 @@ export class GeminiTTSService {
       if (koreanVoice) {
         utterance.voice = koreanVoice
       }
-
-      logSpeechOutput('Gemini TTS 전처리된 텍스트 음성 출력', { 
-        original: options.text,
-        processed: processedText,
-        voice: koreanVoice?.name || 'default'
-      })
 
       speechSynthesis.speak(utterance)
       
