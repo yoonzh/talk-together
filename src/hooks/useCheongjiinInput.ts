@@ -126,19 +126,15 @@ export const useCheongjiinInput = () => {
 
     if (key === 'space') {
       setState(prev => {
-        const currentTime = Date.now()
-        const assembled = prev.currentChar.initial && prev.currentChar.medial
-          ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
-          : ''
+        // AIDEV-NOTE: 스페이스 키 로직 개선 - 조합 중이면 완성, 아니면 바로 띄어쓰기
         
-        // 현재 조합 중인 글자가 있는지 확인
-        const hasCurrentChar = prev.currentChar.initial || prev.currentChar.medial || prev.currentChar.final
-        
-        // 이전 space키 입력으로부터 짧은 시간(500ms) 내에 다시 space키가 눌렸는지 확인
-        const isQuickSecondSpace = !hasCurrentChar && (currentTime - prev.lastSpaceTime) < 500
-        
-        if (hasCurrentChar) {
+        // 현재 조합 중인 글자가 있는지 확인 (isComposing 상태 사용)
+        if (prev.isComposing && (prev.currentChar.initial || prev.currentChar.medial || prev.currentChar.final)) {
           // 조합 중인 글자가 있을 때: 현재 글자를 완성하고 조합 상태 종료
+          const assembled = prev.currentChar.initial && prev.currentChar.medial
+            ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
+            : prev.currentChar.initial || ''
+          
           return {
             ...prev,
             text: prev.text + assembled,
@@ -146,20 +142,14 @@ export const useCheongjiinInput = () => {
             vowelSequence: [],
             consonantClickCounts: {},
             isComposing: false,
-            lastSpaceTime: currentTime
+            lastSpaceTime: 0
           }
-        } else if (isQuickSecondSpace) {
-          // 빠른 연속 space키: 띄어쓰기 추가
+        } else {
+          // 조합 상태가 아닐 때: 바로 띄어쓰기 추가 (연속 띄어쓰기 허용)
           return {
             ...prev,
             text: prev.text + ' ',
-            lastSpaceTime: 0 // 리셋
-          }
-        } else {
-          // 첫 번째 space키 (조합 완성 후): 아무것도 하지 않음
-          return {
-            ...prev,
-            lastSpaceTime: currentTime
+            lastSpaceTime: 0
           }
         }
       })
