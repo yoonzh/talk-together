@@ -9,6 +9,8 @@ export interface ITTSService {
 export class WebSpeechTTSService implements ITTSService {
   async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
     try {
+      console.log('🔊 TTS Engine: Web Speech API 사용', { text })
+      
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'ko-KR'
       utterance.rate = options?.speed || 1.0
@@ -39,6 +41,8 @@ export class EnhancedGeminiTTSService implements ITTSService {
 
   async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
     try {
+      console.log('🔊 TTS Engine: Gemini TTS 사용', { text })
+      
       const ttsOptions: TTSOptions = {
         text,
         voice: options?.voice || 'ko-KR-Standard-A',
@@ -64,6 +68,7 @@ export class GoogleCloudTTSServiceWrapper implements ITTSService {
 
   async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
     try {
+      console.log('🔊 TTS Engine: Google Cloud TTS 사용', { text })
       await this.googleCloudTTS.playAudio(text, options)
     } catch (error) {
       logError('Google Cloud TTS 서비스 실패', error)
