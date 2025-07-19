@@ -159,13 +159,13 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
                   e.currentTarget.style.transform = 'scale(0.95)'
                 }}
                 onMouseUp={(e) => {
-                  const numberStyle = getKeyStyle(key, true)
+                  const numberStyle = getKeyStyle(key, true) as any
                   e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
                   e.currentTarget.style.color = numberStyle.color
                   e.currentTarget.style.transform = 'scale(1)'
                 }}
                 onMouseLeave={(e) => {
-                  const numberStyle = getKeyStyle(key, true)
+                  const numberStyle = getKeyStyle(key, true) as any
                   e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
                   e.currentTarget.style.color = numberStyle.color
                   e.currentTarget.style.transform = 'scale(1)'

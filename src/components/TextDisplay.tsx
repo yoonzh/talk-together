@@ -119,7 +119,8 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
           color: '#333',
           textAlign: 'center',
           lineHeight: '1.4',
-          flex: 1
+          flex: 1,
+          whiteSpace: 'pre-wrap' // AIDEV-NOTE: 연속 공백과 줄바꿈 표시
         }}>
           {renderTextWithCursor()}
         </div>

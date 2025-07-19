@@ -85,6 +85,8 @@ export const useCheongjiinInput = () => {
   }, [])
 
   const handleKeyPress = useCallback((key: string) => {
+    // AIDEV-NOTE: 모든 키 입력 시 타이머 정리 (스페이스 포함)
+    clearAutoCompleteTimer()
     if (key === 'backspace') {
       setState(prev => {
         if (prev.isComposing) {
@@ -126,6 +128,12 @@ export const useCheongjiinInput = () => {
 
     if (key === 'space') {
       setState(prev => {
+        console.log('🔍 스페이스 키 입력:', {
+          isComposing: prev.isComposing,
+          currentChar: prev.currentChar,
+          text: prev.text
+        })
+        
         // AIDEV-NOTE: 스페이스 키 로직 개선 - 조합 중이면 완성, 아니면 바로 띄어쓰기
         
         // 현재 조합 중인 글자가 있는지 확인 (isComposing 상태 사용)
@@ -135,6 +143,7 @@ export const useCheongjiinInput = () => {
             ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
             : prev.currentChar.initial || ''
           
+          console.log('✅ 조합 완성:', assembled)
           return {
             ...prev,
             text: prev.text + assembled,
@@ -146,6 +155,7 @@ export const useCheongjiinInput = () => {
           }
         } else {
           // 조합 상태가 아닐 때: 바로 띄어쓰기 추가 (연속 띄어쓰기 허용)
+          console.log('⎵ 띄어쓰기 추가')
           return {
             ...prev,
             text: prev.text + ' ',
