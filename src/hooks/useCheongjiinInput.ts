@@ -236,6 +236,17 @@ export const useCheongjiinInput = () => {
       return
     }
 
+    // AIDEV-NOTE: 숫자 키 처리
+    if (/^[0-9]$/.test(key)) {
+      setState(prev => {
+        return {
+          ...prev,
+          text: prev.text + key
+        }
+      })
+      return
+    }
+
     if (isConsonantKey(key)) {
       setState(prev => {
         const clickCount = (prev.consonantClickCounts[key] || 0) + 1

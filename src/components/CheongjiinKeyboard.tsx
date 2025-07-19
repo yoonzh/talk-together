@@ -35,7 +35,12 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     getCompositionState: () => ({ isComposing, currentChar })
   }), [clearAll, commitCurrentChar, setText, isComposing, currentChar])
 
-  // AIDEV-NOTE: 키보드 레이아웃 - 아래줄이 공백|ㅇㅁ|백스페이스 순서로 구성됨
+  // AIDEV-NOTE: 숫자 키보드 레이아웃 (상단)
+  const numberLayout = [
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+  ]
+
+  // AIDEV-NOTE: 천지인 키보드 레이아웃 - 아래줄이 공백|ㅇㅁ|백스페이스 순서로 구성됨
   const keyboardLayout = [
     ['ㅣ', 'ㆍ', 'ㅡ'],
     ['ㄱㅋ', 'ㄴㄹ', 'ㄷㅌ'],
@@ -56,10 +61,10 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     }
   }
 
-  const getKeyStyle = (key: string) => {
+  const getKeyStyle = (key: string, isNumber = false) => {
     const baseStyle = {
-      height: '70px',
-      fontSize: '24px',
+      height: isNumber ? '35px' : '70px', // AIDEV-NOTE: 숫자 키는 절반 높이
+      fontSize: isNumber ? '20px' : '24px',
       fontWeight: 'bold',
       border: '2px solid #ddd',
       borderRadius: '12px',
@@ -70,6 +75,16 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
+    }
+
+    // 숫자 키 스타일
+    if (isNumber) {
+      return {
+        ...baseStyle,
+        backgroundColor: '#e3f2fd',
+        color: '#1976d2',
+        border: '2px solid #bbdefb'
+      }
     }
 
     if (key === 'backspace' || key === 'newline' || key === 'space') {
@@ -90,9 +105,24 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     return baseStyle
   }
 
-  const handleKeyClick = (key: string) => {
+  const handleKeyClick = (key: string, isNumber = false) => {
     onKeyPress?.()
-    handleKeyPress(key)
+    
+    // AIDEV-NOTE: 숫자 키 처리 - 현재 조합을 완성하고 숫자 추가
+    if (isNumber) {
+      // 현재 조합 중인 글자가 있으면 먼저 완성
+      if (isComposing) {
+        commitCurrentChar()
+        // 조합 완성 후 숫자 입력을 위한 지연 처리
+        setTimeout(() => {
+          handleKeyPress(key)
+        }, 0)
+      } else {
+        handleKeyPress(key)
+      }
+    } else {
+      handleKeyPress(key)
+    }
   }
 
   return (
@@ -103,6 +133,52 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       flexShrink: 0, /* 키보드 크기 고정 */
       paddingBottom: 'calc(35px + var(--safe-area-inset-bottom))' /* 아이폰 하단 여백 증가 */
     }}>
+      {/* AIDEV-NOTE: 숫자 키보드 섹션 */}
+      <div style={{
+        marginBottom: '15px',
+        maxWidth: '400px',
+        margin: '0 auto 15px auto'
+      }}>
+        {numberLayout.map((row, rowIndex) => (
+          <div
+            key={`number-${rowIndex}`}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(10, 1fr)',
+              gap: '5px'
+            }}
+          >
+            {row.map((key, keyIndex) => (
+              <button
+                key={`number-${keyIndex}`}
+                onClick={() => handleKeyClick(key, true)}
+                style={getKeyStyle(key, true)}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.backgroundColor = '#1976d2'
+                  e.currentTarget.style.color = '#ffffff'
+                  e.currentTarget.style.transform = 'scale(0.95)'
+                }}
+                onMouseUp={(e) => {
+                  const numberStyle = getKeyStyle(key, true)
+                  e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
+                  e.currentTarget.style.color = numberStyle.color
+                  e.currentTarget.style.transform = 'scale(1)'
+                }}
+                onMouseLeave={(e) => {
+                  const numberStyle = getKeyStyle(key, true)
+                  e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
+                  e.currentTarget.style.color = numberStyle.color
+                  e.currentTarget.style.transform = 'scale(1)'
+                }}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* AIDEV-NOTE: 천지인 키보드 섹션 */}
       <div style={{
         display: 'grid',
         gridTemplateRows: 'repeat(4, 1fr)',
