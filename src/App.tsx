@@ -3,7 +3,6 @@ import { logUserAction, logKeyboardState, logSpeechOutput } from './utils/logger
 import CheongjiinKeyboard from './components/CheongjiinKeyboard'
 import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
-import SpeechButton from './components/SpeechButton'
 import KeyboardToggleButton from './components/KeyboardToggleButton'
 import TTSServiceFactory from './services/ttsService'
 
@@ -14,6 +13,7 @@ const App: React.FC = () => {
   const [shouldClearOnNextInput, setShouldClearOnNextInput] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(true)
   const [keyboardReturnedViaButton, setKeyboardReturnedViaButton] = useState(false)
+  const [forcePredicatesClear, setForcePredicatesClear] = useState(false)
   const [compositionState, setCompositionState] = useState({ isComposing: false, currentChar: { initial: '', medial: '', final: '' }, currentDisplayChar: '' })
   const keyboardRef = useRef<{ 
     clearAll: () => void; 
@@ -57,7 +57,7 @@ const App: React.FC = () => {
     }
   }
 
-  const handlePredicateSelect = (predicate: string) => {
+  const handlePredicateSelect = async (predicate: string) => {
     logUserAction('서술어 선택', { predicate, inputText })
     
     // AIDEV-NOTE: 서술어 선택 후에도 목록이 유지되도록 inputText를 지우지 않음
@@ -67,44 +67,28 @@ const App: React.FC = () => {
     
     // 키보드 상태도 초기화
     keyboardRef.current?.clearAll()
+    
+    // AIDEV-NOTE: 서술어 선택 시 자동으로 TTS 재생
+    try {
+      const ttsService = TTSServiceFactory.createTTSService()
+      await ttsService.playAudio(predicate)
+      
+      logSpeechOutput('서술어 선택 시 자동 음성 출력', { sentence: predicate })
+    } catch (error) {
+      logSpeechOutput('TTS 실패, Web Speech API 폴백 시도', { sentence: predicate, error })
+      
+      // 폴백: 기본 Web Speech API 사용
+      try {
+        const utterance = new SpeechSynthesisUtterance(predicate)
+        utterance.lang = 'ko-KR'
+        speechSynthesis.speak(utterance)
+        logSpeechOutput('Web Speech API 폴백 성공', { sentence: predicate })
+      } catch (fallbackError) {
+        logSpeechOutput('모든 TTS 방법 실패', { sentence: predicate, error: fallbackError })
+      }
+    }
   }
 
-  const handleSpeak = async () => {
-    // 먼저 조합 중인 글자가 있으면 완성
-    commitComposingChar()
-    
-    // 조합 완성 후 최종 텍스트로 음성 출력 (textChange 이벤트 후 업데이트된 inputText 사용)
-    setTimeout(async () => {
-      // 서술어가 선택되었으면 서술어를 사용, 아니면 입력 텍스트 사용
-      const fullSentence = selectedPredicate || inputText
-      
-      if (fullSentence.trim()) {
-        try {
-          // TTS 서비스 팩토리를 사용하여 적절한 TTS 서비스 선택
-          const ttsService = TTSServiceFactory.createTTSService()
-          await ttsService.playAudio(fullSentence)
-          
-          logSpeechOutput('음성 출력 완료', { sentence: fullSentence })
-        } catch (error) {
-          logSpeechOutput('음성 출력 실패, Web Speech API 폴백 시도', { sentence: fullSentence, error })
-          
-          // 폴백: 기본 Web Speech API 사용
-          try {
-            const utterance = new SpeechSynthesisUtterance(fullSentence)
-            utterance.lang = 'ko-KR'
-            speechSynthesis.speak(utterance)
-            logSpeechOutput('Web Speech API 폴백 성공', { sentence: fullSentence })
-          } catch (fallbackError) {
-            logSpeechOutput('모든 TTS 방법 실패', { sentence: fullSentence, error: fallbackError })
-          }
-        }
-      } else {
-        logSpeechOutput('빈 텍스트로 인한 음성 출력 취소')
-      }
-      // 소리내기 버튼 클릭 후 다음 입력 시 초기화 설정
-      setShouldClearOnNextInput(true)
-    }, 0)
-  }
 
   const handleClearAll = () => {
     logUserAction('전체 삭제', { inputText, selectedPredicate })
@@ -112,6 +96,8 @@ const App: React.FC = () => {
     setSelectedPredicate('')
     setShouldGeneratePredicates(false)
     setShouldClearOnNextInput(false)
+    // AIDEV-NOTE: 키보드 보이기 버튼 클릭 시 서술어 목록 강제 지우기
+    setForcePredicatesClear(true)
     keyboardRef.current?.clearAll()
   }
 
@@ -153,6 +139,8 @@ const App: React.FC = () => {
         inputText={inputText}
         onPredicateSelect={handlePredicateSelect}
         shouldGenerate={shouldGeneratePredicates}
+        forcePredicatesClear={forcePredicatesClear}
+        onPredicatesCleared={() => setForcePredicatesClear(false)}
       />
       
       <div style={{
@@ -161,31 +149,23 @@ const App: React.FC = () => {
         borderTop: '1px solid #e0e0e0',
         borderBottom: '1px solid #e0e0e0',
         display: 'flex',
-        gap: '12px'
+        justifyContent: 'center'
       }}>
-        <div style={{ flex: 2 }}>
-          <SpeechButton 
-            text={selectedPredicate || inputText}
-            onSpeak={handleSpeak}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <KeyboardToggleButton 
-            onClick={() => {
-              // 먼저 조합 중인 글자가 있으면 완성
-              commitComposingChar()
-              
-              // 전체삭제 동작 수행
-              handleClearAll()
-              
-              logUserAction('#️⃣버튼 클릭', { inputText })
-              logKeyboardState('키보드 복원 및 전체삭제')
-              setKeyboardVisible(true)
-              setKeyboardReturnedViaButton(true)
-            }}
-            disabled={keyboardVisible}
-          />
-        </div>
+        <KeyboardToggleButton 
+          onClick={() => {
+            // 먼저 조합 중인 글자가 있으면 완성
+            commitComposingChar()
+            
+            // 전체삭제 동작 수행
+            handleClearAll()
+            
+            logUserAction('#️⃣버튼 클릭', { inputText })
+            logKeyboardState('키보드 복원 및 전체삭제')
+            setKeyboardVisible(true)
+            setKeyboardReturnedViaButton(true)
+          }}
+          disabled={keyboardVisible}
+        />
       </div>
       
       {keyboardVisible && (

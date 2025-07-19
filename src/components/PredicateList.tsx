@@ -12,13 +12,30 @@ interface PredicateListProps {
   inputText: string
   onPredicateSelect: (predicate: string) => void
   shouldGenerate?: boolean
+  forcePredicatesClear?: boolean
+  onPredicatesCleared?: () => void
 }
 
-const PredicateList: React.FC<PredicateListProps> = ({ inputText, onPredicateSelect, shouldGenerate = false }) => {
+const PredicateList: React.FC<PredicateListProps> = ({ 
+  inputText, 
+  onPredicateSelect, 
+  shouldGenerate = false, 
+  forcePredicatesClear = false,
+  onPredicatesCleared
+}) => {
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modelSwitchMessage, setModelSwitchMessage] = useState<string | null>(null)
+  
+  // AIDEV-NOTE: 강제로 서술어 목록 지우기 처리
+  useEffect(() => {
+    if (forcePredicatesClear) {
+      setPredicates([])
+      onPredicatesCleared?.()
+    }
+  }, [forcePredicatesClear, onPredicatesCleared])
+
   useEffect(() => {
     const generatePredicates = async () => {
       if (!inputText.trim() || !shouldGenerate) {
