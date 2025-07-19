@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { getConsonantByClick, combineVowel, isVowelKey, isConsonantKey } from '../utils/cheongjiinUtils'
 import { assembleHangul } from '../utils/hangulUtils'
 
@@ -25,7 +25,48 @@ export const useCheongjiinInput = () => {
     lastSpaceTime: 0
   })
 
+  // AIDEV-NOTE: 3초 타임아웃 후 자동 완성을 위한 타이머
+  const autoCompleteTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 타이머 정리 함수
+  const clearAutoCompleteTimer = useCallback(() => {
+    if (autoCompleteTimerRef.current) {
+      clearTimeout(autoCompleteTimerRef.current)
+      autoCompleteTimerRef.current = null
+    }
+  }, [])
+
+  // 타이머 시작 함수
+  const startAutoCompleteTimer = useCallback(() => {
+    clearAutoCompleteTimer()
+    autoCompleteTimerRef.current = setTimeout(() => {
+      setState(prev => {
+        if (prev.isComposing && prev.currentChar.initial) {
+          let assembled = ''
+          if (prev.currentChar.medial) {
+            // 초성+중성(+종성) 조합
+            assembled = assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
+          } else {
+            // 초성만 있는 경우 그대로 완성
+            assembled = prev.currentChar.initial
+          }
+          return {
+            ...prev,
+            text: prev.text + assembled,
+            currentChar: { initial: '', medial: '', final: '' },
+            vowelSequence: [],
+            consonantClickCounts: {},
+            isComposing: false,
+            lastSpaceTime: 0
+          }
+        }
+        return prev
+      })
+    }, 2000) // 2초 타임아웃
+  }, [clearAutoCompleteTimer])
+
   const commitCurrentChar = useCallback(() => {
+    clearAutoCompleteTimer() // 수동 완성 시 타이머 정리
     setState(prev => {
       if (prev.currentChar.initial && prev.currentChar.medial) {
         const assembled = assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
@@ -255,7 +296,23 @@ export const useCheongjiinInput = () => {
       })
       return
     }
-  }, [commitCurrentChar])
+  }, [clearAutoCompleteTimer, startAutoCompleteTimer])
+
+  // AIDEV-NOTE: 모든 키 입력 후 조합 가능한 상태이면 타이머 시작
+  useEffect(() => {
+    if (state.isComposing && state.currentChar.initial) {
+      startAutoCompleteTimer()
+    } else {
+      clearAutoCompleteTimer()
+    }
+  }, [state.isComposing, state.currentChar.initial, state.currentChar.medial, state.currentChar.final, startAutoCompleteTimer, clearAutoCompleteTimer])
+
+  // AIDEV-NOTE: 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      clearAutoCompleteTimer()
+    }
+  }, [clearAutoCompleteTimer])
 
   const getCurrentDisplay = useCallback(() => {
     if (state.isComposing && state.currentChar.initial) {
