@@ -165,6 +165,7 @@ const App: React.FC = () => {
         forcePredicatesClear={forcePredicatesClear}
         onPredicatesCleared={() => setForcePredicatesClear(false)}
         showHelp={helpVisible}
+        currentSettings={settings}
       />
       
       <div style={{

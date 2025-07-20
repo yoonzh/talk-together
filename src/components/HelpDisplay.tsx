@@ -3,8 +3,13 @@
 
 import React from 'react'
 import { getDisplayPrompt } from '../utils/promptTemplates'
+import type { AppSettings } from '../services/commandSystem/types'
 
-export const HelpDisplay: React.FC = () => {
+interface HelpDisplayProps {
+  currentSettings?: AppSettings
+}
+
+export const HelpDisplay: React.FC<HelpDisplayProps> = ({ currentSettings }) => {
   const aiPrompt = getDisplayPrompt()
 
   return (
@@ -22,6 +27,47 @@ export const HelpDisplay: React.FC = () => {
       }}>
         ⚙️ 설정 명령어 도움말
       </h3>
+
+      {/* 현재 설정 상태 표시 */}
+      {currentSettings && (
+        <div style={{ 
+          marginBottom: '25px',
+          padding: '15px',
+          backgroundColor: '#e8f5e8',
+          borderRadius: '8px',
+          border: '1px solid #4caf50'
+        }}>
+          <h4 style={{ color: '#2e7d32', marginBottom: '10px', fontSize: '16px' }}>📊 현재 설정 상태</h4>
+          <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <strong>자동완성:</strong> {' '}
+              <span style={{ 
+                color: currentSettings.autoComplete.enabled ? '#2e7d32' : '#d32f2f',
+                fontWeight: 'bold'
+              }}>
+                {currentSettings.autoComplete.enabled 
+                  ? `${currentSettings.autoComplete.duration}초 후 활성화`
+                  : '비활성화'
+                }
+              </span>
+            </div>
+            <div style={{ marginBottom: '8px' }}>
+              <strong>AI 모델:</strong> {' '}
+              <span style={{ color: '#1976d2', fontWeight: 'bold' }}>
+                {currentSettings.aiModel === 'openai' ? 'ChatGPT' : 
+                 currentSettings.aiModel === 'gemini' ? 'Gemini' : 
+                 'Auto (Gemini 우선)'}
+              </span>
+            </div>
+            <div>
+              <strong>세션 ID:</strong> {' '}
+              <span style={{ color: '#666', fontFamily: 'monospace' }}>
+                {currentSettings.session.id}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ color: '#333', fontSize: '16px', marginBottom: '10px' }}>🔄 자동완성 설정</h4>

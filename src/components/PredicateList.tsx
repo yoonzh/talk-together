@@ -16,6 +16,7 @@ interface PredicateListProps {
   forcePredicatesClear?: boolean
   onPredicatesCleared?: () => void
   showHelp?: boolean
+  currentSettings?: any
 }
 
 const PredicateList: React.FC<PredicateListProps> = ({ 
@@ -24,7 +25,8 @@ const PredicateList: React.FC<PredicateListProps> = ({
   shouldGenerate = false, 
   forcePredicatesClear = false,
   onPredicatesCleared,
-  showHelp = false
+  showHelp = false,
+  currentSettings
 }) => {
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
@@ -80,7 +82,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
 
   // AIDEV-NOTE: 도움말 표시 모드일 때는 도움말 컴포넌트 렌더링
   if (showHelp) {
-    return <HelpDisplay />
+    return <HelpDisplay currentSettings={currentSettings} />
   }
 
   return (
