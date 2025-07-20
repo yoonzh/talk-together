@@ -15,7 +15,14 @@ interface InputState {
   lastSpaceTime: number
 }
 
-export const useCheongjiinInput = () => {
+interface UseCheongjiinInputProps {
+  autoCompleteConfig?: {
+    enabled: boolean
+    duration: number
+  }
+}
+
+export const useCheongjiinInput = (props?: UseCheongjiinInputProps) => {
   const [state, setState] = useState<InputState>({
     text: '',
     currentChar: { initial: '', medial: '', final: '' },
@@ -25,8 +32,9 @@ export const useCheongjiinInput = () => {
     lastSpaceTime: 0
   })
 
-  // AIDEV-NOTE: 3초 타임아웃 후 자동 완성을 위한 타이머
+  // AIDEV-NOTE: 동적 자동완성 설정을 위한 타이머 (기본값: 비활성화)
   const autoCompleteTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const autoCompleteConfig = props?.autoCompleteConfig || { enabled: false, duration: 0 }
 
   // 타이머 정리 함수
   const clearAutoCompleteTimer = useCallback(() => {
@@ -36,8 +44,13 @@ export const useCheongjiinInput = () => {
     }
   }, [])
 
-  // 타이머 시작 함수
+  // 타이머 시작 함수 - 동적 시간 설정 지원
   const startAutoCompleteTimer = useCallback(() => {
+    // AIDEV-NOTE: 자동완성이 비활성화되어 있으면 타이머 시작하지 않음
+    if (!autoCompleteConfig.enabled || autoCompleteConfig.duration <= 0) {
+      return
+    }
+
     clearAutoCompleteTimer()
     autoCompleteTimerRef.current = setTimeout(() => {
       setState(prev => {
@@ -50,6 +63,7 @@ export const useCheongjiinInput = () => {
             // 초성만 있는 경우 그대로 완성
             assembled = prev.currentChar.initial
           }
+          console.log(`⏰ 자동완성 실행 (${autoCompleteConfig.duration}초): ${assembled}`)
           return {
             ...prev,
             text: prev.text + assembled,
@@ -62,8 +76,8 @@ export const useCheongjiinInput = () => {
         }
         return prev
       })
-    }, 2000) // 2초 타임아웃
-  }, [clearAutoCompleteTimer])
+    }, autoCompleteConfig.duration * 1000) // 동적 시간 설정
+  }, [clearAutoCompleteTimer, autoCompleteConfig.enabled, autoCompleteConfig.duration])
 
   const commitCurrentChar = useCallback(() => {
     clearAutoCompleteTimer() // 수동 완성 시 타이머 정리

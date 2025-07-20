@@ -4,7 +4,9 @@ import CheongjiinKeyboard from './components/CheongjiinKeyboard'
 import PredicateList from './components/PredicateList'
 import TextDisplay from './components/TextDisplay'
 import KeyboardToggleButton from './components/KeyboardToggleButton'
+import { NotificationPopup } from './components/NotificationPopup'
 import TTSServiceFactory from './services/ttsService'
+import { useCommandSystem } from './hooks/useCommandSystem'
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('')
@@ -21,6 +23,16 @@ const App: React.FC = () => {
     setText: (text: string) => void;
     getCompositionState: () => { isComposing: boolean; currentChar: { initial: string; medial: string; final: string } };
   }>(null)
+  
+  // AIDEV-NOTE: 명령어 시스템 통합
+  const { 
+    settings, 
+    notification, 
+    setNotification,
+    helpVisible, 
+    setHelpVisible, 
+    executeCommand 
+  } = useCommandSystem()
 
   const handleTextChange = useCallback((text: string) => {
     setInputText(text)
@@ -101,20 +113,31 @@ const App: React.FC = () => {
     keyboardRef.current?.clearAll()
   }
 
-  const handleCompleteInput = () => {
+  const handleCompleteInput = async () => {
     // 먼저 조합 중인 글자가 있으면 완성
     commitComposingChar()
     
     // 조합 완성 후 상태 업데이트를 위한 지연 처리
-    setTimeout(() => {
+    setTimeout(async () => {
       logUserAction('말하기 버튼 클릭', { inputText })
-      logKeyboardState('키보드 숨김')
-      // 입력 완성 후 AI 서술어 생성 시작
-      setShouldGeneratePredicates(true)
-      // 말하기 버튼 클릭 후 다음 입력 시 초기화 설정
-      setShouldClearOnNextInput(true)
-      // 키보드 숨기기
-      setKeyboardVisible(false)
+      
+      // AIDEV-NOTE: 명령어 처리 시도
+      const isCommand = await executeCommand(inputText)
+      
+      if (isCommand) {
+        // 명령어 처리됨 - 키보드 숨김 및 텍스트 초기화
+        setKeyboardVisible(false)
+        keyboardRef.current?.clearAll()
+        setInputText('')
+        setSelectedPredicate('')
+      } else {
+        // 일반 입력 - AI 서술어 생성
+        logKeyboardState('키보드 숨김')
+        setHelpVisible(false) // 도움말 숨김
+        setShouldGeneratePredicates(true)
+        setShouldClearOnNextInput(true)
+        setKeyboardVisible(false)
+      }
     }, 50) // 50ms로 늘려서 텍스트 업데이트 완료 후 처리
   }
 
@@ -138,9 +161,10 @@ const App: React.FC = () => {
       <PredicateList 
         inputText={inputText}
         onPredicateSelect={handlePredicateSelect}
-        shouldGenerate={shouldGeneratePredicates}
+        shouldGenerate={shouldGeneratePredicates && !helpVisible}
         forcePredicatesClear={forcePredicatesClear}
         onPredicatesCleared={() => setForcePredicatesClear(false)}
+        showHelp={helpVisible}
       />
       
       <div style={{
@@ -159,6 +183,9 @@ const App: React.FC = () => {
             // 전체삭제 동작 수행
             handleClearAll()
             
+            // AIDEV-NOTE: 키보드 표시 시 도움말 숨김
+            setHelpVisible(false)
+            
             logUserAction('#️⃣버튼 클릭', { inputText })
             logKeyboardState('키보드 복원 및 전체삭제')
             setKeyboardVisible(true)
@@ -168,12 +195,19 @@ const App: React.FC = () => {
         />
       </div>
       
+      {/* AIDEV-NOTE: 명령어 시스템 알림 팝업 */}
+      <NotificationPopup 
+        message={notification} 
+        onClose={() => setNotification(null)}
+      />
+
       {keyboardVisible && (
         <CheongjiinKeyboard 
           ref={keyboardRef} 
           onTextChange={handleTextChange} 
           onKeyPress={handleKeyPress}
           onCompositionStateChange={handleCompositionStateChange}
+          autoCompleteConfig={settings.autoComplete}
         />
       )}
     </div>

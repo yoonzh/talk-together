@@ -5,6 +5,10 @@ interface CheongjiinKeyboardProps {
   onTextChange: (text: string) => void
   onKeyPress?: () => void
   onCompositionStateChange?: (state: { isComposing: boolean; currentChar: { initial: string; medial: string; final: string }; currentDisplayChar: string }) => void
+  autoCompleteConfig?: {
+    enabled: boolean
+    duration: number
+  }
 }
 
 interface CheongjiinKeyboardRef {
@@ -17,8 +21,8 @@ interface CheongjiinKeyboardRef {
   }
 }
 
-const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress, onCompositionStateChange }, ref) => {
-  const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar, getCurrentDisplay } = useCheongjiinInput()
+const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress, onCompositionStateChange, autoCompleteConfig }, ref) => {
+  const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar, getCurrentDisplay } = useCheongjiinInput({ autoCompleteConfig })
 
   useEffect(() => {
     onTextChange(text)

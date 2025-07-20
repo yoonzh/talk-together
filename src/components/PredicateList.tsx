@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import openaiService from '../services/openaiService'
+import { HelpDisplay } from './HelpDisplay'
 
 
 interface PredicateCandidate {
@@ -14,6 +15,7 @@ interface PredicateListProps {
   shouldGenerate?: boolean
   forcePredicatesClear?: boolean
   onPredicatesCleared?: () => void
+  showHelp?: boolean
 }
 
 const PredicateList: React.FC<PredicateListProps> = ({ 
@@ -21,7 +23,8 @@ const PredicateList: React.FC<PredicateListProps> = ({
   onPredicateSelect, 
   shouldGenerate = false, 
   forcePredicatesClear = false,
-  onPredicatesCleared
+  onPredicatesCleared,
+  showHelp = false
 }) => {
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
@@ -74,6 +77,11 @@ const PredicateList: React.FC<PredicateListProps> = ({
       generatePredicates()
     }
   }, [inputText, shouldGenerate])
+
+  // AIDEV-NOTE: 도움말 표시 모드일 때는 도움말 컴포넌트 렌더링
+  if (showHelp) {
+    return <HelpDisplay />
+  }
 
   return (
     <div style={{
