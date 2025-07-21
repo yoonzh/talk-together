@@ -14,7 +14,7 @@ export class OpenAIService {
   private openaiApiKey: string
   private geminiApiKey: string
   private geminiService: GeminiService | null = null
-  private preferredModel: 'openai' | 'gemini' | 'auto' = 'auto' // auto = gemini 우선
+  private preferredModel: 'openai' | 'gemini' | 'auto' = 'auto' // auto = openai 우선
   
   private constructor() {
     this.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
@@ -69,57 +69,63 @@ export class OpenAIService {
     }
     
     // 설정된 모델에 따라 우선순위 결정
-    const shouldUseGeminiFirst = (this.preferredModel === 'auto' && this.geminiService) || 
-                                 (this.preferredModel === 'gemini' && this.geminiService)
-    const shouldUseOpenAIFirst = this.preferredModel === 'openai' && this.openaiApiKey
+    const shouldUseOpenAIFirst = (this.preferredModel === 'auto' && this.openaiApiKey) || 
+                                 (this.preferredModel === 'openai' && this.openaiApiKey)
+    const shouldUseGeminiFirst = this.preferredModel === 'gemini' && this.geminiService
     
-    // Gemini 우선 사용
-    if (shouldUseGeminiFirst) {
-      try {
-        console.log(`🤖 AI 모델: Gemini (${this.preferredModel})`)
-        return await this.geminiService!.generatePredicates(noun)
-      } catch (error) {
-        logError('Gemini API failed, falling back to OpenAI', error)
-        // Gemini 실패 시 OpenAI로 폴백 (auto 모드에서만)
-        if (this.preferredModel === 'auto' && this.openaiApiKey) {
-          console.log('🤖 Gemini 실패 → OpenAI 폴백')
-          return this.generateWithOpenAI(noun)
-        }
-      }
-    }
-    
-    // OpenAI 우선 사용
+    // OpenAI 우선 사용 (auto 모드 포함)
     if (shouldUseOpenAIFirst) {
       try {
         console.log(`🤖 AI 모델: ChatGPT (${this.preferredModel})`)
         return this.generateWithOpenAI(noun)
       } catch (error) {
         logError('OpenAI API failed, falling back to Gemini', error)
-        // OpenAI 실패 시 Gemini로 폴백
-        if (this.geminiService) {
+        // OpenAI 실패 시 Gemini로 폴백 (auto 모드에서만)
+        if (this.preferredModel === 'auto' && this.geminiService) {
           console.log('🤖 ChatGPT 실패 → Gemini 폴백')
           return await this.geminiService.generatePredicates(noun)
         }
       }
     }
     
-    // 기본 폴백 (auto 모드)
-    if (this.geminiService) {
+    // Gemini 우선 사용 (명시적 설정 시만)
+    if (shouldUseGeminiFirst) {
       try {
-        console.log('🤖 AI 모델: Gemini (기본)')
-        return await this.geminiService.generatePredicates(noun)
+        console.log(`🤖 AI 모델: Gemini (${this.preferredModel})`)
+        return await this.geminiService!.generatePredicates(noun)
       } catch (error) {
         logError('Gemini API failed, falling back to OpenAI', error)
+        // Gemini 실패 시 OpenAI로 폴백
+        if (this.openaiApiKey) {
+          console.log('🤖 Gemini 실패 → ChatGPT 폴백')
+          return this.generateWithOpenAI(noun)
+        }
       }
     }
     
-    // OpenAI 사용
-    if (!this.openaiApiKey) {
-      console.log('🤖 API 키 없음 → 로컬 폴백')
-      return this.getLocalFallback(noun)
+    // 기본 폴백 (auto 모드)
+    if (this.openaiApiKey) {
+      try {
+        console.log('🤖 AI 모델: ChatGPT (기본)')
+        return this.generateWithOpenAI(noun)
+      } catch (error) {
+        logError('OpenAI API failed, falling back to Gemini', error)
+      }
     }
     
-    return this.generateWithOpenAI(noun)
+    // Gemini 최후 시도
+    if (this.geminiService) {
+      try {
+        console.log('🤖 AI 모델: Gemini (최후 시도)')
+        return await this.geminiService.generatePredicates(noun)
+      } catch (error) {
+        logError('Gemini API failed', error)
+      }
+    }
+    
+    // 모든 API 실패 시 로컬 폴백
+    console.log('🤖 모든 API 실패 → 로컬 폴백')
+    return this.getLocalFallback(noun)
   }
 
   private async generateWithOpenAI(noun: string): Promise<PredicateCandidate[]> {

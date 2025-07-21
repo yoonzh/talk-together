@@ -1,0 +1,317 @@
+import { TursoClient, getTursoClient } from './tursoClient'
+import { AIPredicateCacheService } from './aiPredicateCacheService'
+import { TTSAudioCacheService, TTSSource } from './ttsAudioCacheService'
+import { logError } from '../../utils/logger'
+
+export interface CacheServiceConfig {
+  autoCleanup?: boolean
+  cleanupIntervalHours?: number
+}
+
+export class CacheService {
+  private client: TursoClient | null = null
+  public predicates: AIPredicateCacheService | null = null
+  public audio: TTSAudioCacheService | null = null
+  private cleanupInterval: NodeJS.Timeout | null = null
+  private config: CacheServiceConfig
+
+  constructor(config: CacheServiceConfig = {}) {
+    this.config = {
+      autoCleanup: true,
+      cleanupIntervalHours: 24,
+      ...config
+    }
+  }
+
+  async initialize(): Promise<void> {
+    try {
+      console.log('🚀 [Cache Service] 초기화 시작...')
+      
+      // Turso 클라이언트 연결
+      this.client = await getTursoClient()
+      
+      // 캐시 서비스 인스턴스 생성
+      this.predicates = new AIPredicateCacheService(this.client)
+      this.audio = new TTSAudioCacheService(this.client)
+      
+      // 각 서비스 초기화
+      await this.predicates.initialize()
+      await this.audio.initialize()
+      
+      // 자동 정리 작업 설정
+      if (this.config.autoCleanup) {
+        this.startAutoCleanup()
+      }
+      
+      console.log('✅ [Cache Service] 초기화 완료')
+      
+    } catch (error) {
+      logError('캐시 서비스 초기화 실패', error)
+      throw error
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      if (!this.client) return false
+      
+      const isHealthy = await this.client.healthCheck()
+      console.log(`🏥 [Cache Service] 헬스체크: ${isHealthy ? '정상' : '비정상'}`)
+      
+      return isHealthy
+    } catch (error) {
+      logError('캐시 서비스 헬스체크 실패', error)
+      return false
+    }
+  }
+
+  async getOverallStats(): Promise<{
+    predicates: any
+    audio: any
+    database: any
+  }> {
+    try {
+      const [predicateStats, audioStats] = await Promise.all([
+        this.predicates?.getCacheStats(),
+        this.audio?.getCacheStats()
+      ])
+
+      const dbStats = this.client ? {
+        connected: this.client.isHealthy,
+        client_info: this.client.clientInfo
+      } : null
+
+      return {
+        predicates: predicateStats || null,
+        audio: audioStats || null,
+        database: dbStats
+      }
+    } catch (error) {
+      logError('캐시 서비스 통계 조회 실패', error)
+      return {
+        predicates: null,
+        audio: null,
+        database: null
+      }
+    }
+  }
+
+  private startAutoCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval)
+    }
+
+    const intervalMs = (this.config.cleanupIntervalHours || 24) * 60 * 60 * 1000
+    
+    this.cleanupInterval = setInterval(async () => {
+      try {
+        console.log('🧹 [Cache Service] 자동 정리 작업 시작...')
+        await this.runCleanup()
+      } catch (error) {
+        logError('자동 캐시 정리 실패', error)
+      }
+    }, intervalMs)
+
+    console.log(`⏰ [Cache Service] 자동 정리 설정: ${this.config.cleanupIntervalHours}시간 간격`)
+  }
+
+  async runCleanup(): Promise<{
+    predicatesDeleted: number
+    audioDeleted: number
+  }> {
+    try {
+      const [predicatesDeleted, audioDeleted] = await Promise.all([
+        this.predicates?.cleanExpiredCache() || 0,
+        this.audio?.cleanOldCache(30) || 0
+      ])
+
+      console.log(`🧹 [Cache Service] 정리 완료: AI 서술어 ${predicatesDeleted}개, TTS 오디오 ${audioDeleted}개 삭제`)
+      
+      return { predicatesDeleted, audioDeleted }
+    } catch (error) {
+      logError('캐시 정리 작업 실패', error)
+      return { predicatesDeleted: 0, audioDeleted: 0 }
+    }
+  }
+
+  async shutdown(): Promise<void> {
+    try {
+      console.log('🛑 [Cache Service] 종료 시작...')
+      
+      // 자동 정리 중지
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval)
+        this.cleanupInterval = null
+      }
+      
+      // 데이터베이스 연결 해제는 전역 관리되므로 여기서는 하지 않음
+      this.client = null
+      this.predicates = null
+      this.audio = null
+      
+      console.log('✅ [Cache Service] 종료 완료')
+      
+    } catch (error) {
+      logError('캐시 서비스 종료 실패', error)
+    }
+  }
+
+  get isInitialized(): boolean {
+    return this.client !== null && this.predicates !== null && this.audio !== null
+  }
+}
+
+// 싱글톤 캐시 서비스 인스턴스
+let globalCacheService: CacheService | null = null
+
+export async function getCacheService(): Promise<CacheService> {
+  if (!globalCacheService) {
+    globalCacheService = new CacheService()
+    await globalCacheService.initialize()
+  }
+  
+  return globalCacheService
+}
+
+export async function shutdownCacheService(): Promise<void> {
+  if (globalCacheService) {
+    await globalCacheService.shutdown()
+    globalCacheService = null
+  }
+}
+
+// AIDEV-NOTE: AI 서비스 연동을 위한 헬퍼 함수들
+export async function getAIPredicatesWithCache(inputWord: string): Promise<{
+  predicates: string[]
+  source: 'cache' | 'api' | 'fallback'
+  fromCache: boolean
+  modelName?: string
+  cacheId?: number
+}> {
+  try {
+    const cacheService = await getCacheService()
+    
+    // 1. 캐시 확인
+    const cached = await cacheService.predicates?.getFromCache(inputWord)
+    if (cached) {
+      await cacheService.predicates?.logCacheOperation('hit', inputWord, { model: cached.model_name })
+      return {
+        predicates: cached.ai_response,
+        source: 'cache',
+        fromCache: true,
+        modelName: cached.model_name,
+        cacheId: cached.id
+      }
+    }
+    
+    // 2. 캐시 미스 로그
+    await cacheService.predicates?.logCacheOperation('miss', inputWord)
+    
+    return {
+      predicates: [],
+      source: 'api', // 실제 API 호출은 상위 레이어에서 처리
+      fromCache: false
+    }
+    
+  } catch (error) {
+    logError('AI 서술어 캐시 조회 실패', { inputWord, error })
+    return {
+      predicates: [],
+      source: 'fallback',
+      fromCache: false
+    }
+  }
+}
+
+export async function saveAIPredicatesToCache(
+  inputWord: string,
+  predicates: string[],
+  modelName: string,
+  isFromAPI: boolean = true
+): Promise<void> {
+  try {
+    const cacheService = await getCacheService()
+    await cacheService.predicates?.saveToCache(inputWord, predicates, modelName, isFromAPI)
+    
+    const operation = isFromAPI ? 'save' : 'skip'
+    await cacheService.predicates?.logCacheOperation(operation, inputWord, { 
+      model: modelName, 
+      predicates_count: predicates.length 
+    })
+    
+  } catch (error) {
+    logError('AI 서술어 캐시 저장 실패', { inputWord, modelName, error })
+  }
+}
+
+// AIDEV-NOTE: TTS 서비스 연동을 위한 헬퍼 함수들
+export async function getTTSAudioWithCache(
+  sentenceText: string,
+  voiceConfig: any = {}
+): Promise<{
+  audioData: string | null
+  source: 'cache' | 'api' | 'fallback'
+  fromCache: boolean
+}> {
+  try {
+    const cacheService = await getCacheService()
+    
+    // 1. 캐시 확인
+    const cached = await cacheService.audio?.getAudioFromCache(sentenceText, voiceConfig)
+    if (cached) {
+      await cacheService.audio?.logCacheOperation('hit', sentenceText, cached.tts_provider as TTSSource)
+      return {
+        audioData: cached.audio_data,
+        source: 'cache',
+        fromCache: true
+      }
+    }
+    
+    // 2. 캐시 미스 로그
+    await cacheService.audio?.logCacheOperation('miss', sentenceText)
+    
+    return {
+      audioData: null,
+      source: 'api', // 실제 API 호출은 상위 레이어에서 처리
+      fromCache: false
+    }
+    
+  } catch (error) {
+    logError('TTS 오디오 캐시 조회 실패', { sentenceText, error })
+    return {
+      audioData: null,
+      source: 'fallback',
+      fromCache: false
+    }
+  }
+}
+
+export async function saveTTSAudioToCache(
+  sentenceText: string,
+  audioData: string,
+  voiceConfig: any,
+  ttsSource: TTSSource,
+  durationMs?: number,
+  originalSizeBytes?: number
+): Promise<void> {
+  try {
+    const cacheService = await getCacheService()
+    await cacheService.audio?.saveAudioToCache(
+      sentenceText,
+      audioData,
+      voiceConfig,
+      ttsSource,
+      durationMs,
+      originalSizeBytes
+    )
+    
+    const operation = ttsSource === TTSSource.WEB_SPEECH_FALLBACK ? 'skip' : 'save'
+    await cacheService.audio?.logCacheOperation(operation, sentenceText, ttsSource, {
+      duration_ms: durationMs,
+      size_bytes: originalSizeBytes
+    })
+    
+  } catch (error) {
+    logError('TTS 오디오 캐시 저장 실패', { sentenceText, ttsSource, error })
+  }
+}

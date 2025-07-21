@@ -72,31 +72,27 @@ This project is built with React, TypeScript, and Vite. To get started:
 
 ## AI Configuration
 
-The app supports multiple AI providers for real-time predicate generation. To enable AI features:
+The app supports multiple AI providers for real-time predicate generation. AI 서비스가 다른것이 추가될 수 있으니 추상화에 신경써라.
+AI는 Option 1을 먼저 시도하고 실패하면 다음 Option으로 넘어간다. 모든 AI서비스 호출에 실패하면 로컬 폴백으로 응답한다. 작업은 추상화 레벨에서 이루어져 서비스 로직은 단일 호출로 처리해야한다.
 
-### Option 1: Gemini 2.5 Flash-Lite (Recommended)
+To enable AI features:
+### Option 1: OpenAI GPT-3.5 Turbo
+1. Get an OpenAI API key from https://platform.openai.com/api-keys
+2. Add it to your `.env` file:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+### Option 2: Gemini 2.5 Flash-Lite
 1. Get a Gemini API key from https://ai.google.dev/
 2. Add it to your `.env` file:
    ```
    GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
-### Option 2: OpenAI GPT-3.5 Turbo
-1. Get an OpenAI API key from https://platform.openai.com/api-keys
-2. Add it to your `.env` file:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
-
 ### Environment Variables
 - **Local Development**: Use `OPENAI_API_KEY` and `GEMINI_API_KEY` in your `.env` file
 - **Production (Vercel)**: Set environment variables without any prefix in Vercel dashboard
-- **Legacy Support**: `VITE_OPENAI_API_KEY` and `VITE_GEMINI_API_KEY` are still supported for backward compatibility
-
-### API Priority
-- If both keys are provided, Gemini will be used as the primary AI service
-- If Gemini fails, the app automatically falls back to OpenAI
-- If no API keys are provided, it uses local predicate generation
+- VITE_ prefix 사용 금지
 
 ### Features
 - Real-time Korean sentence generation for autism communication aid
@@ -132,11 +128,12 @@ The app supports multiple AI providers for real-time predicate generation. To en
 ✅ 천지인 키보드 (3x4 레이아웃)
 ✅ 한글 조합 로직 (초성+중성+종성)
 ✅ AI 기반 서술어 후보 생성 시스템
-✅ 향상된 음성 출력 기능 (Web Speech API + Gemini TTS)
+✅ 향상된 음성 출력 기능 (GCP TTS + Web Speech API)
 ✅ 반응형 모바일 디자인
 ✅ 유닛 테스트 (Vitest)
-✅ 실시간 AI 서술어 생성 (OpenAI GPT-3.5)
-✅ Gemini 2.5 Flash TTS 통합 (환경 변수 기반)
+✅ 실시간 AI 서술어 생성
+✅ GCP TTS 사용
+✅ turso를 AI 응답과 TTS 응답 캐시 DB 로 사용
 
 ### Technology Stack
 - React 19.1.0
@@ -150,11 +147,11 @@ The app supports multiple AI providers for real-time predicate generation. To en
 
 ### 음성 출력 시스템
 앱은 세 가지 TTS 시스템을 지원합니다:
-
-1. **Web Speech API** (기본값)
-   - 브라우저 내장 TTS 엔진 사용
-   - 별도 API 키 불필요
-   - 즉시 사용 가능
+1. **Google Cloud TTS** (기본값)
+   - Google Cloud Text-to-Speech API 사용
+   - 고품질 한국어 음성 합성
+   - MP3 형태의 오디오 스트리밍
+   - 다양한 음성 옵션 지원
 
 2. **Gemini 2.5 Flash TTS** (향상된 텍스트 전처리)
    - AI 기반 텍스트 전처리로 더 자연스러운 음성
@@ -163,20 +160,19 @@ The app supports multiple AI providers for real-time predicate generation. To en
    - 발음하기 어려운 단어 개선
    - 최종 음성 출력은 Web Speech API 사용
 
-3. **Google Cloud TTS** (고품질 음성 합성)
-   - Google Cloud Text-to-Speech API 사용
-   - 고품질 한국어 음성 합성
-   - MP3 형태의 오디오 스트리밍
-   - 다양한 음성 옵션 지원
+3. **Web Speech API** (위 기능 실패 시 사용)
+   - 브라우저 내장 TTS 엔진 사용
+   - 별도 API 키 불필요
+   - 즉시 사용 가능
 
-### TTS 설정 방법
+## TTS 설정 방법
 환경 변수 `TTS_MODULE`을 사용하여 TTS 시스템을 선택합니다:
 
 ```bash
 # .env 파일 설정
 TTS_MODULE=GEMINI_TTS      # Gemini TTS 사용 (텍스트 전처리)
 TTS_MODULE=GCP_TTS         # Google Cloud TTS 사용 (고품질 음성)
-# TTS_MODULE 설정하지 않으면 Web Speech API 사용 (기본값)
+# TTS_MODULE 설정하지 않으면 Web Speech API 사용
 
 # Google Cloud Platform API 키 (TTS_MODULE=GCP_TTS일 때 필요)
 GCP_API_KEY=your_gcp_api_key_here
@@ -188,7 +184,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ### TTS 서비스 아키텍처
 ```
 TTSServiceFactory
-├── WebSpeechTTSService (기본)
+├── WebSpeechTTSService
 │   └── 브라우저 내장 Web Speech API 사용
 ├── EnhancedGeminiTTSService (텍스트 전처리)
 │   ├── Gemini API를 통한 텍스트 전처리
@@ -206,8 +202,7 @@ TTSServiceFactory
 3. API 키가 없으면 Web Speech API로 폴백
 
 ### 폴백 시스템
-- 선택된 TTS 서비스 실패 시 에러 발생 (자동 폴백 없음)
-- 환경 설정이 잘못된 경우에만 Web Speech API로 폴백
+- 선택된 TTS 서비스 실패 시 자동 폴백
 - 네트워크 오류나 API 제한 시 에러 로깅
 
 ### 테스트 커버리지
@@ -253,11 +248,11 @@ TTSServiceFactory
 ### 🏗️ 아키텍처 설계 결정
 - **컴포넌트 구조**: App → TextDisplay, PredicateList, SpeechButton, CheongjiinKeyboard
 - **상태 관리**: React hooks 기반 (useState, useEffect)
-- **서비스 계층**: 
+- **서비스 계층**:
   - `openaiService.ts` - OpenAI API 호출 및 응답 처리
   - `aiService.ts` - AI 서비스 추상화 레이어
   - `josiUtils.ts` - 한국어 조사 처리
-- **유틸리티 분리**: 
+- **유틸리티 분리**:
   - `hangulUtils.ts` - 한글 조합/분해 로직
   - `cheongjiinUtils.ts` - 천지인 키 매핑 및 모음 조합
   - `useCheongjiinInput.ts` - 천지인 입력 상태 관리
@@ -269,7 +264,7 @@ TTSServiceFactory
 
 ### 🧪 테스트 전략 결정
 - **단위 테스트**: 한글 조합, 천지인 변환, 조사 처리 로직
-- **테스트 케이스**: 
+- **테스트 케이스**:
   - 한글 조합 (초성+중성, 초성+중성+종성)
   - 천지인 모음 조합 (모든 조합 테이블)
   - 조사 처리 (받침 유무별 정확한 조사 선택)

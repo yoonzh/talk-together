@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import openaiService from '../services/openaiService'
+import aiService from '../services/aiService'
 import { HelpDisplay } from './HelpDisplay'
 
 
@@ -55,7 +55,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
       setError(null)
       
       try {
-        const aiPredicates = await openaiService.generatePredicates(inputText.trim())
+        const aiPredicates = await aiService.generatePredicates(inputText.trim())
         
         // 모델 전환 키워드인 경우 빈 배열이 반환되므로 UI 메시지 처리
         const normalized = inputText.trim().toLowerCase()

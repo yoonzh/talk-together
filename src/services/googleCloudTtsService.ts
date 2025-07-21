@@ -1,5 +1,7 @@
 import { logError } from '../utils/logger'
 import { TTSOptions } from './geminiTtsService'
+import { TTSAudioCacheService, TTSSource } from './database/ttsAudioCacheService'
+import { TursoClient } from './database/tursoClient'
 
 export interface GoogleCloudTTSRequest {
   input: {
@@ -25,24 +27,64 @@ export interface GoogleCloudTTSResponse {
 export class GoogleCloudTTSService {
   private apiKey: string
   private baseUrl = 'https://texttospeech.googleapis.com/v1/text:synthesize'
+  private cacheService: TTSAudioCacheService | null = null
 
   constructor(apiKey: string) {
     this.apiKey = apiKey
+    this.initializeCacheService()
+  }
+
+  private async initializeCacheService(): Promise<void> {
+    try {
+      const databaseUrl = import.meta.env.VITE_TURSO_DATABASE_URL
+      const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN
+      
+      if (!databaseUrl || !authToken) {
+        console.warn('🚫 [Google Cloud TTS] Turso 환경변수 없음 - 캐시 없이 동작')
+        return
+      }
+      
+      const tursoClient = new TursoClient({ url: databaseUrl, authToken })
+      await tursoClient.connect()
+      this.cacheService = new TTSAudioCacheService(tursoClient)
+      await this.cacheService.initialize()
+    } catch (error) {
+      console.warn('🚫 [Google Cloud TTS] 캐시 서비스 초기화 실패 - 캐시 없이 동작:', error)
+    }
   }
 
   async playAudio(text: string, options?: Partial<TTSOptions>): Promise<void> {
     try {
+      const voiceConfig = {
+        voice: this.mapVoiceName(options?.voice),
+        speed: options?.speed || 1.0,
+        pitch: options?.pitch || 0.0,
+        language: 'ko-KR'
+      }
+
+      // 1. 캐시 확인
+      if (this.cacheService) {
+        const cachedAudio = await this.cacheService.getAudioFromCache(text, voiceConfig)
+        if (cachedAudio) {
+          await this.cacheService.playFromCache(cachedAudio)
+          await this.cacheService.logCacheOperation('hit', text, TTSSource.GOOGLE_CLOUD)
+          return
+        }
+        await this.cacheService.logCacheOperation('miss', text, TTSSource.GOOGLE_CLOUD)
+      }
+
+      // 2. API 호출
       const request: GoogleCloudTTSRequest = {
         input: { text },
         voice: {
           languageCode: 'ko-KR',
-          name: this.mapVoiceName(options?.voice),
+          name: voiceConfig.voice,
           ssmlGender: 'NEUTRAL'
         },
         audioConfig: {
           audioEncoding: 'MP3',
-          speakingRate: options?.speed || 1.0,
-          pitch: options?.pitch || 0.0, // Google Cloud uses different pitch range (-20 to 20)
+          speakingRate: voiceConfig.speed,
+          pitch: voiceConfig.pitch,
           volumeGainDb: 0.0
         }
       }
@@ -67,8 +109,22 @@ export class GoogleCloudTTSService {
         throw new Error('No audio content received from Google Cloud TTS')
       }
 
-      // Convert base64 audio to blob and play
+      // 3. 오디오 재생
       await this.playBase64Audio(data.audioContent)
+      
+      // 4. 캐시에 저장 (API 성공 후)
+      if (this.cacheService) {
+        const originalSize = new Blob([atob(data.audioContent)]).size
+        await this.cacheService.saveAudioToCache(
+          text,
+          data.audioContent,
+          voiceConfig,
+          TTSSource.GOOGLE_CLOUD,
+          undefined, // 재생 시간은 측정하지 않음
+          originalSize
+        )
+        await this.cacheService.logCacheOperation('save', text, TTSSource.GOOGLE_CLOUD, { size: originalSize })
+      }
       
     } catch (error) {
       logError('Google Cloud TTS 음성 생성 실패', error)
