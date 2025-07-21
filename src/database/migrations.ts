@@ -95,6 +95,20 @@ export const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_cache_eligible ON usage_logs(cache_eligible);
     `,
     rollback: `DROP TABLE IF EXISTS usage_logs;`
+  },
+  {
+    id: '003_complete_responses_safe',
+    description: 'Safe migration to complete AI responses (handles existing schema)',
+    sql: `
+      -- Clear cache data (legacy format incompatible) 
+      DELETE FROM ai_predicate_cache;
+      
+      -- ai_response column already exists, just add index
+      CREATE INDEX IF NOT EXISTS idx_ai_response ON ai_predicate_cache(ai_response);
+    `,
+    rollback: `
+      DROP INDEX IF EXISTS idx_ai_response;
+    `
   }
 ]
 
@@ -200,8 +214,20 @@ export class MigrationManager {
     await this.createMigrationsTable()
     const appliedMigrations = await this.getAppliedMigrations()
     
+    // Clean up failed migration if it exists
+    if (appliedMigrations.includes('003_complete_responses_only')) {
+      console.log('🧹 [DB] 실패한 마이그레이션 정리: 003_complete_responses_only')
+      await this.client.execute(`
+        DELETE FROM schema_migrations 
+        WHERE id = '003_complete_responses_only'
+      `)
+    }
+    
+    // Refresh applied migrations after cleanup
+    const currentAppliedMigrations = await this.getAppliedMigrations()
+    
     for (const migration of migrations) {
-      if (!appliedMigrations.includes(migration.id)) {
+      if (!currentAppliedMigrations.includes(migration.id)) {
         await this.applyMigration(migration)
       } else {
         console.log(`⏭️ [DB] 마이그레이션 스킵 (이미 적용됨): ${migration.id}`)

@@ -1,4 +1,4 @@
-import { getAIPredicatesWithCache, saveAIPredicatesToCache } from './database/cacheService'
+import { getAIPredicatesWithCache, saveAIResponseToCache } from './database/cacheService'
 import { OpenAIService } from './openaiService'
 import { GeminiService } from './geminiService'
 
@@ -46,7 +46,7 @@ export class AIService {
         if (isOpenAIModel) {
           // OpenAI 모델로 생성된 캐시는 그대로 사용
           console.log(`🎯 [AI Service] OpenAI 캐시 적중: ${noun} (모델: ${cacheResult.modelName})`)
-          return this.convertToPredicateCandidates(cacheResult.predicates)
+          return cacheResult.response
         } else {
           // 다른 모델로 생성된 캐시는 OpenAI로 1회 재시도
           console.log(`🔄 [AI Service] 비-OpenAI 캐시 발견: ${noun} (모델: ${cacheResult.modelName}) - OpenAI 재시도`)
@@ -57,7 +57,7 @@ export class AIService {
           
           // OpenAI 재시도 실패 시 기존 캐시 사용
           console.log(`⚠️ [AI Service] OpenAI 재시도 실패, 기존 캐시 사용: ${noun}`)
-          return this.convertToPredicateCandidates(cacheResult.predicates)
+          return cacheResult.response
         }
       }
       
@@ -67,9 +67,8 @@ export class AIService {
       if (response && response.predicates.length > 0) {
         console.log(`✅ [AI Service] API 서술어 생성 성공: ${noun}`)
         
-        // 3. API 응답을 캐시에 저장 (실제 모델명과 함께)
-        const predicateTexts = response.predicates.map(p => p.text)
-        await saveAIPredicatesToCache(noun, predicateTexts, response.modelName, true)
+        // 3. API 응답을 캐시에 저장 (메타데이터 포함)
+        await saveAIResponseToCache(noun, response.predicates, response.modelName, true)
         
         return response.predicates
       }
@@ -94,14 +93,6 @@ export class AIService {
     }
   }
   
-  private convertToPredicateCandidates(predicateTexts: string[]): PredicateCandidate[] {
-    return predicateTexts.map(text => ({
-      text,
-      emoji: this.getEmojiForText(text),
-      category: this.getCategoryForText(text)
-    }))
-  }
-  
   private isOpenAIModel(modelName?: string): boolean {
     if (!modelName) return false
     // OpenAI 모델명 패턴 확인
@@ -122,9 +113,8 @@ export class AIService {
       if (openaiResult && openaiResult.length > 0) {
         console.log(`✅ [AI Service] OpenAI 재시도 성공: ${openaiResult.length}개 서술어`)
         
-        // 재시도 성공 시 캐시에 저장
-        const predicateTexts = openaiResult.map(p => p.text)
-        await saveAIPredicatesToCache(noun, predicateTexts, 'gpt-3.5-turbo', true)
+        // 재시도 성공 시 응답을 캐시에 저장
+        await saveAIResponseToCache(noun, openaiResult, 'gpt-3.5-turbo', true)
         
         return openaiResult
       }
@@ -134,29 +124,6 @@ export class AIService {
       console.warn(`⚠️ [AI Service] OpenAI 재시도 실패:`, error)
       return null
     }
-  }
-  
-  private getEmojiForText(text: string): string {
-    // 간단한 텍스트-이모지 매핑
-    if (text.includes('먹') || text.includes('마시')) return '🍽️'
-    if (text.includes('가고') || text.includes('이동')) return '🚶'
-    if (text.includes('좋') || text.includes('사랑')) return '😊'
-    if (text.includes('싫') || text.includes('화')) return '😞'
-    if (text.includes('도와') || text.includes('부탁')) return '🙏'
-    if (text.includes('놀') || text.includes('재미')) return '😄'
-    if (text.includes('배우') || text.includes('공부')) return '📚'
-    if (text.includes('만나') || text.includes('보고')) return '🤗'
-    if (text.includes('필요') || text.includes('원')) return '🤲'
-    if (text.includes('쉬') || text.includes('자')) return '😴'
-    return '💭' // 기본 이모지
-  }
-  
-  private getCategoryForText(text: string): string {
-    if (text.includes('먹') || text.includes('마시')) return 'food'
-    if (text.includes('가고') || text.includes('에서')) return 'place'
-    if (text.includes('놀') || text.includes('배우') || text.includes('운동')) return 'activity'
-    if (text.includes('만나') || text.includes('엄마') || text.includes('아빠')) return 'person'
-    return 'general'
   }
   
   private async callAIAPI(noun: string): Promise<{ predicates: PredicateCandidate[], modelName: string } | null> {

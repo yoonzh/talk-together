@@ -11,10 +11,16 @@ function createSimpleHash(content: string): string {
   return Math.abs(hash).toString(16)
 }
 
+export interface PredicateCandidate {
+  text: string
+  emoji: string
+  category: string
+}
+
 export interface AIPredicateCache {
   id: number
   input_word: string
-  ai_response: string[]
+  ai_response: PredicateCandidate[]  // Complete response objects only
   model_name: string
   response_source: 'api' | 'local_fallback'
   response_hash: string
@@ -46,7 +52,7 @@ export class AIPredicateCacheService {
     console.log(`⚙️ [AI Cache] 캐시 유지 기간: ${this.cacheDurationMonths}개월`)
   }
 
-  private generateResponseHash(inputWord: string, response: string[], modelName: string): string {
+  private generateResponseHash(inputWord: string, response: PredicateCandidate[], modelName: string): string {
     const content = `${inputWord}:${JSON.stringify(response)}:${modelName}`
     return createSimpleHash(content)
   }
@@ -96,7 +102,7 @@ export class AIPredicateCacheService {
 
   async saveToCache(
     inputWord: string, 
-    aiResponse: string[], 
+    aiResponse: PredicateCandidate[], 
     modelName: string,
     isFromAPI: boolean = true
   ): Promise<void> {
@@ -122,14 +128,17 @@ export class AIPredicateCacheService {
         return
       }
 
+      // JSON 응답 저장
+      const responseJson = JSON.stringify(aiResponse)
+
       await this.client.execute(`
         INSERT INTO ai_predicate_cache (
-          input_word, ai_response, model_name, response_source, response_hash, 
-          expires_at, access_count, last_accessed_at
+          input_word, ai_response, model_name, response_source, 
+          response_hash, expires_at, access_count, last_accessed_at
         ) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
       `, [
         inputWord,
-        JSON.stringify(aiResponse),
+        responseJson,
         modelName,
         responseSource,
         responseHash,

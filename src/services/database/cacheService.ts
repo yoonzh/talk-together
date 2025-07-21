@@ -182,7 +182,7 @@ export async function shutdownCacheService(): Promise<void> {
 
 // AIDEV-NOTE: AI 서비스 연동을 위한 헬퍼 함수들
 export async function getAIPredicatesWithCache(inputWord: string): Promise<{
-  predicates: string[]
+  response: import('./aiPredicateCacheService').PredicateCandidate[]
   source: 'cache' | 'api' | 'fallback'
   fromCache: boolean
   modelName?: string
@@ -196,7 +196,7 @@ export async function getAIPredicatesWithCache(inputWord: string): Promise<{
     if (cached) {
       await cacheService.predicates?.logCacheOperation('hit', inputWord, { model: cached.model_name })
       return {
-        predicates: cached.ai_response,
+        response: cached.ai_response,
         source: 'cache',
         fromCache: true,
         modelName: cached.model_name,
@@ -208,7 +208,7 @@ export async function getAIPredicatesWithCache(inputWord: string): Promise<{
     await cacheService.predicates?.logCacheOperation('miss', inputWord)
     
     return {
-      predicates: [],
+      response: [],
       source: 'api', // 실제 API 호출은 상위 레이어에서 처리
       fromCache: false
     }
@@ -216,31 +216,32 @@ export async function getAIPredicatesWithCache(inputWord: string): Promise<{
   } catch (error) {
     logError('AI 서술어 캐시 조회 실패', { inputWord, error })
     return {
-      predicates: [],
+      response: [],
       source: 'fallback',
       fromCache: false
     }
   }
 }
 
-export async function saveAIPredicatesToCache(
+// AIDEV-NOTE: 완전한 AI 응답 객체를 캐시에 저장하는 헬퍼 함수
+export async function saveAIResponseToCache(
   inputWord: string,
-  predicates: string[],
+  response: import('./aiPredicateCacheService').PredicateCandidate[],
   modelName: string,
   isFromAPI: boolean = true
 ): Promise<void> {
   try {
     const cacheService = await getCacheService()
-    await cacheService.predicates?.saveToCache(inputWord, predicates, modelName, isFromAPI)
+    await cacheService.predicates?.saveToCache(inputWord, response, modelName, isFromAPI)
     
     const operation = isFromAPI ? 'save' : 'skip'
     await cacheService.predicates?.logCacheOperation(operation, inputWord, { 
       model: modelName, 
-      predicates_count: predicates.length 
+      predicates_count: response.length
     })
     
   } catch (error) {
-    logError('AI 서술어 캐시 저장 실패', { inputWord, modelName, error })
+    logError('AI 응답 캐시 저장 실패', { inputWord, modelName, error })
   }
 }
 
