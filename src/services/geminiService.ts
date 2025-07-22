@@ -75,6 +75,11 @@ export class GeminiService {
       
       return []
     } catch (error) {
+      console.error('❌ [Gemini] JSON 파싱 실패 - 원본 응답:', error)
+      console.error('📄 [Gemini] 받은 전체 응답 내용:')
+      console.error('==================== 시작 ====================')
+      console.error(response)
+      console.error('==================== 끝 =====================')
       logError('Failed to parse Gemini response', error)
       return []
     }

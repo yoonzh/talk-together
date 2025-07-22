@@ -207,6 +207,11 @@ export class OpenAIService {
       
       return []
     } catch (error) {
+      console.error('❌ [OpenAI] JSON 파싱 실패 - 원본 응답:', error)
+      console.error('📄 [OpenAI] 받은 전체 응답 내용:')
+      console.error('==================== 시작 ====================')
+      console.error(response)
+      console.error('==================== 끝 =====================')
       logError('Failed to parse OpenAI response', error)
       return []
     }

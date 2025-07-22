@@ -2,16 +2,27 @@ import { getAIPredicatesWithCache, saveAIResponseToCache } from './database/cach
 import { OpenAIService } from './openaiService'
 import { GeminiService } from './geminiService'
 
-interface PredicateCandidate {
-  text: string
-  emoji: string
-  category: string
+// Enhanced AI System Integration
+import AIOrchestrator from './ai/AIOrchestrator'
+import communicationLogger from './utils/AICommunicationLogger'
+import { PredicateCandidate } from './utils/types/aiTypes'
+
+// Feature Flags for Enhanced System
+const FEATURE_FLAGS = {
+  ENABLE_ENHANCED_AI: import.meta.env.VITE_ENABLE_ENHANCED_AI === 'true' || false,
+  ENABLE_PARALLEL_AI: import.meta.env.VITE_ENABLE_PARALLEL_AI === 'true' || false,
+  ENABLE_GPT4O_EVALUATION: import.meta.env.VITE_ENABLE_GPT4O_EVALUATION === 'true' || false,
+  FALLBACK_TO_LEGACY: import.meta.env.VITE_FALLBACK_TO_LEGACY === 'true' || true
 }
 
 export class AIService {
   private static instance: AIService
   private openaiService: OpenAIService | null = null
   private geminiService: GeminiService | null = null
+  
+  // Enhanced AI System Components
+  private aiOrchestrator: typeof AIOrchestrator | null = null
+  private logger: typeof communicationLogger | null = null
   
   private constructor() {
     // OpenAI 서비스 초기화
@@ -24,6 +35,15 @@ export class AIService {
     const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY
     if (geminiApiKey) {
       this.geminiService = new GeminiService(geminiApiKey)
+    }
+    
+    // Enhanced AI System 초기화
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI) {
+      this.aiOrchestrator = AIOrchestrator
+      this.logger = communicationLogger
+      console.log('🚀 [AI Service] Enhanced AI System 활성화')
+    } else {
+      console.log('📦 [AI Service] Legacy AI System 사용')
     }
   }
   
@@ -38,59 +58,108 @@ export class AIService {
     try {
       console.log(`🔍 [AI Service] 서술어 생성 요청: ${noun}`)
       
-      // 1. 캐시 확인 및 OpenAI 모델 검증
-      const cacheResult = await getAIPredicatesWithCache(noun)
-      if (cacheResult.fromCache) {
-        const isOpenAIModel = this.isOpenAIModel(cacheResult.modelName)
-        
-        if (isOpenAIModel) {
-          // OpenAI 모델로 생성된 캐시는 그대로 사용
-          console.log(`🎯 [AI Service] OpenAI 캐시 적중: ${noun} (모델: ${cacheResult.modelName})`)
-          return cacheResult.response
-        } else {
-          // 다른 모델로 생성된 캐시는 OpenAI로 1회 재시도
-          console.log(`🔄 [AI Service] 비-OpenAI 캐시 발견: ${noun} (모델: ${cacheResult.modelName}) - OpenAI 재시도`)
-          const openAIRetry = await this.retryWithOpenAI(noun)
-          if (openAIRetry) {
-            return openAIRetry
-          }
-          
-          // OpenAI 재시도 실패 시 기존 캐시 사용
-          console.log(`⚠️ [AI Service] OpenAI 재시도 실패, 기존 캐시 사용: ${noun}`)
-          return cacheResult.response
-        }
+      // Enhanced AI System 사용 (Feature Flag 확인)
+      if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.aiOrchestrator) {
+        return await this.generateWithEnhancedSystem(noun)
       }
       
-      // 2. 실제 AI API 호출
-      const response = await this.callAIAPI(noun)
-      
-      if (response && response.predicates.length > 0) {
-        console.log(`✅ [AI Service] API 서술어 생성 성공: ${noun}`)
-        
-        // 3. API 응답을 캐시에 저장 (메타데이터 포함)
-        await saveAIResponseToCache(noun, response.predicates, response.modelName, true)
-        
-        return response.predicates
-      }
-      
-      // 4. API 실패 시 로컬 폴백 (캐시하지 않음)
-      console.log(`⚠️ [AI Service] API 실패, 로컬 폴백 사용: ${noun}`)
-      const localPredicates = this.getLocalBackupPredicates(noun)
-      
-      // 5. 폴백 사용 로그만 출력 (DB에 저장하지 않음)
-      console.log(`📝 [AI Service] 로컬 폴백 사용 - 단어: ${noun}, 응답: ${localPredicates.length}개 (DB 저장 안함)`)
-      
-      return localPredicates
+      // Legacy System 사용 (기존 로직 유지)
+      return await this.generateWithLegacySystem(noun)
       
     } catch (error) {
       console.error('🚨 [AI Service] 서술어 생성 오류:', error)
       
-      // 최후 수단으로 로컬 백업 사용 (DB에 저장하지 않음)
+      // Feature Flag에 따른 폴백 전략
+      if (FEATURE_FLAGS.FALLBACK_TO_LEGACY && !FEATURE_FLAGS.ENABLE_ENHANCED_AI) {
+        console.log('🔄 [AI Service] Legacy 시스템으로 폴백')
+        return await this.generateWithLegacySystem(noun)
+      }
+      
+      // 최후 수단: 응급 로컬 폴백
       const emergencyPredicates = this.getLocalBackupPredicates(noun)
-      console.log(`📝 [AI Service] 응급 폴백 사용 - 단어: ${noun}, 응답: ${emergencyPredicates.length}개 (DB 저장 안함)`)
+      console.log(`📝 [AI Service] 응급 폴백 사용 - 단어: ${noun}, 응답: ${emergencyPredicates.length}개`)
       
       return emergencyPredicates
     }
+  }
+  
+  // Enhanced AI System 실행
+  private async generateWithEnhancedSystem(noun: string): Promise<PredicateCandidate[]> {
+    try {
+      console.log(`🚀 [AI Service] Enhanced AI System 실행: ${noun}`)
+      
+      const result = await this.aiOrchestrator!.orchestrateRequest(noun)
+      
+      // 상세 로깅
+      if (this.logger) {
+        const summary = this.logger.getSessionSummary()
+        console.log(`📊 [AI Service] Enhanced 세션 요약: ${summary}`)
+      }
+      
+      console.log(`✅ [AI Service] Enhanced 시스템 성공: ${result.predicates.length}개 (${result.source}, ${result.processingTime}ms)`)
+      
+      return result.predicates
+      
+    } catch (error) {
+      console.error('❌ [AI Service] Enhanced AI System 실패:', error)
+      
+      // Legacy로 폴백 시도
+      if (FEATURE_FLAGS.FALLBACK_TO_LEGACY) {
+        console.log('🔄 [AI Service] Enhanced → Legacy 폴백')
+        return await this.generateWithLegacySystem(noun)
+      }
+      
+      throw error
+    }
+  }
+  
+  // Legacy System 실행 (기존 로직)
+  private async generateWithLegacySystem(noun: string): Promise<PredicateCandidate[]> {
+    console.log(`📦 [AI Service] Legacy AI System 실행: ${noun}`)
+    
+    // 1. 캐시 확인 및 OpenAI 모델 검증
+    const cacheResult = await getAIPredicatesWithCache(noun)
+    if (cacheResult.fromCache) {
+      const isOpenAIModel = this.isOpenAIModel(cacheResult.modelName)
+      
+      if (isOpenAIModel) {
+        // OpenAI 모델로 생성된 캐시는 그대로 사용
+        console.log(`🎯 [AI Service] OpenAI 캐시 적중: ${noun} (모델: ${cacheResult.modelName})`)
+        return cacheResult.response
+      } else {
+        // 다른 모델로 생성된 캐시는 OpenAI로 1회 재시도
+        console.log(`🔄 [AI Service] 비-OpenAI 캐시 발견: ${noun} (모델: ${cacheResult.modelName}) - OpenAI 재시도`)
+        const openAIRetry = await this.retryWithOpenAI(noun)
+        if (openAIRetry) {
+          return openAIRetry
+        }
+        
+        // OpenAI 재시도 실패 시 기존 캐시 사용
+        console.log(`⚠️ [AI Service] OpenAI 재시도 실패, 기존 캐시 사용: ${noun}`)
+        return cacheResult.response
+      }
+    }
+    
+    // 2. 실제 AI API 호출
+    const response = await this.callAIAPI(noun)
+    
+    if (response && response.predicates.length > 0) {
+      console.log(`✅ [AI Service] Legacy API 서술어 생성 성공: ${noun}`)
+      
+      // 3. API 응답을 캐시에 저장 (메타데이터 포함)
+      await saveAIResponseToCache(noun, response.predicates, response.modelName, true)
+      
+      return response.predicates
+    }
+    
+    // 4. API 실패 시 로컬 폴백 (캐시하지 않음)
+    console.log(`⚠️ [AI Service] Legacy API 실패, 로컬 폴백 사용: ${noun}`)
+    const localPredicates = this.getLocalBackupPredicates(noun)
+    
+    // 5. 폴백 사용 로그만 출력 (DB에 저장하지 않음)
+    console.log(`📝 [AI Service] Legacy 로컬 폴백 사용 - 단어: ${noun}, 응답: ${localPredicates.length}개 (DB 저장 안함)`)
+    
+    return localPredicates
   }
   
   private isOpenAIModel(modelName?: string): boolean {
@@ -226,6 +295,112 @@ export class AIService {
     if (noun.includes('놀') || noun.includes('게임')) return 'activity'
     
     return 'general'
+  }
+  
+  // Enhanced AI System 관리 메서드들
+  
+  // 시스템 상태 조회
+  public async getSystemStatus(): Promise<{
+    mode: 'enhanced' | 'legacy'
+    healthy: boolean
+    features: typeof FEATURE_FLAGS
+    performance?: any
+  }> {
+    const mode = FEATURE_FLAGS.ENABLE_ENHANCED_AI ? 'enhanced' : 'legacy'
+    
+    if (mode === 'enhanced' && this.aiOrchestrator) {
+      const status = await this.aiOrchestrator.getSystemStatus()
+      return {
+        mode,
+        healthy: status.healthy,
+        features: FEATURE_FLAGS,
+        performance: status.performance
+      }
+    }
+    
+    // Legacy 모드 상태
+    const legacyHealthy = !!(this.openaiService || this.geminiService)
+    
+    return {
+      mode,
+      healthy: legacyHealthy,
+      features: FEATURE_FLAGS
+    }
+  }
+  
+  // 성능 보고서 조회 (Enhanced 모드에서만)
+  public getPerformanceReport(): any {
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.aiOrchestrator) {
+      return this.aiOrchestrator.getPerformanceReport()
+    }
+    
+    return {
+      summary: 'Legacy mode - detailed metrics not available',
+      recommendations: ['Enhanced AI 시스템을 활성화하여 상세 메트릭을 확인하세요'],
+      metrics: {}
+    }
+  }
+  
+  // Feature Flag 상태 조회
+  public getFeatureFlags(): typeof FEATURE_FLAGS {
+    return { ...FEATURE_FLAGS }
+  }
+  
+  // Enhanced AI System 설정 조회 (Enhanced 모드에서만)
+  public getEnhancedConfig(): any {
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.aiOrchestrator) {
+      return this.aiOrchestrator.getConfig()
+    }
+    
+    return null
+  }
+  
+  // 통신 로그 요약 조회 (Enhanced 모드에서만)
+  public getCommunicationSummary(): string {
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.logger) {
+      return this.logger.getSessionSummary()
+    }
+    
+    return 'Legacy mode - communication logging not available'
+  }
+  
+  // 시스템 리셋 (Enhanced 모드에서만)
+  public resetEnhancedSystem(): void {
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.aiOrchestrator) {
+      this.aiOrchestrator.reset()
+      console.log('🔄 [AI Service] Enhanced AI System 리셋 완료')
+    } else {
+      console.log('⚠️ [AI Service] Enhanced AI System이 비활성화되어 있습니다')
+    }
+  }
+  
+  // 디버깅 정보 제공
+  public getDebugInfo(): {
+    mode: string
+    flags: typeof FEATURE_FLAGS
+    legacyServices: {
+      openai: boolean
+      gemini: boolean
+    }
+    enhancedStatus?: any
+  } {
+    const debugInfo = {
+      mode: FEATURE_FLAGS.ENABLE_ENHANCED_AI ? 'enhanced' : 'legacy',
+      flags: FEATURE_FLAGS,
+      legacyServices: {
+        openai: !!this.openaiService,
+        gemini: !!this.geminiService
+      }
+    }
+    
+    if (FEATURE_FLAGS.ENABLE_ENHANCED_AI && this.aiOrchestrator) {
+      return {
+        ...debugInfo,
+        enhancedStatus: this.aiOrchestrator.getConfig()
+      }
+    }
+    
+    return debugInfo
   }
 }
 

@@ -12,6 +12,7 @@ const COMMON_PROMPT_TEMPLATE = (noun: string): string => `당신은 말을 못�
 2. 그 다음 순서는 사용자 입력어와 관련된 감정 표현 (좋아요, 싫어요 등). 단, 사용자 입력어에 대한 감정 표현이 어색하다면 생략
 3. 생성된 문장이 감정을 표현하는 문장이면 반대 감정에 대한 문장도 생성
 4. 나머지 문장은 상태, 특성 등을 표현하는 문장
+5. 응답 토큰수가 모자라면 생성을 멈추고 JSON 포맷에맞게 출력해주세요.
 
 일반 요구사항:
 1. 자폐장애인이 일상에서 자주 사용할 만한 표현
@@ -26,7 +27,6 @@ const COMMON_PROMPT_TEMPLATE = (noun: string): string => `당신은 말을 못�
  */
 const JSON_OUTPUT_FORMAT = `
 출력 형식 (JSON):
-text는 완전한 문장으로 생성해주세요.
 {
   "predicates": [
     {"text": "자동차를 타고 가요", "emoji": "🚗", "category": "이동"},

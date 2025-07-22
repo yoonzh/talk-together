@@ -320,3 +320,123 @@ async function renderFeed(...) {
   - 불필요한 레거시 코드 유지를 피하고 지속적인 리팩토링 권장
   - 새로운 기능과 최적화를 위해 과감한 변경 허용
   - 호환성 유지로 인한 복잡성과 성능 저하 방지
+
+## 데이터베이스 관련 중요 결정사항 (Database Architecture Decisions)
+
+### 📊 **Turso SQLite + LibSQL 선택 이유**
+- **클라우드 네이티브**: 글로벌 분산 SQLite 서비스
+- **비용 효율성**: 스타트업 친화적인 가격 정책
+- **성능**: Edge 노드를 통한 낮은 지연시간
+- **개발 편의성**: SQL 문법 그대로 사용 가능
+
+### 🏗️ **스키마 설계 원칙**
+
+#### **AI 서술어 캐시 테이블 (ai_predicate_cache)**
+```sql
+CREATE TABLE ai_predicate_cache (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  input_word VARCHAR(100) NOT NULL,           -- 사용자 입력 명사
+  ai_response TEXT NOT NULL,                  -- JSON: PredicateCandidate[] 완전 응답
+  model_name VARCHAR(50) NOT NULL,            -- AI 모델명 (gpt-3.5-turbo, gemini-2.5-flash-lite)
+  response_source VARCHAR(20) DEFAULT 'api', -- 'api' | 'local_fallback'
+  response_hash VARCHAR(64) UNIQUE,           -- 중복 방지 해시
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME,                        -- 3개월 후 만료
+  access_count INTEGER DEFAULT 1,             -- 사용 빈도 추적
+  last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### **TTS 오디오 캐시 테이블 (tts_audio_cache)**
+```sql
+CREATE TABLE tts_audio_cache (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sentence_text TEXT NOT NULL,                -- 문장 텍스트
+  sentence_hash VARCHAR(64) UNIQUE NOT NULL,  -- 문장 해시값
+  audio_data TEXT,                            -- Base64 + gzip 압축 오디오
+  compression_type VARCHAR(20) DEFAULT 'base64_gzip',
+  audio_format VARCHAR(10) DEFAULT 'mp3',
+  duration_ms INTEGER,                        -- 재생 시간
+  file_size_bytes INTEGER,                    -- 원본 크기
+  compressed_size_bytes INTEGER,              -- 압축 후 크기
+  voice_config TEXT,                          -- TTS 설정 (JSON)
+  tts_provider VARCHAR(20) DEFAULT 'gcp',     -- 'gcp' | 'gemini' | 'webspeech'
+  is_api_generated BOOLEAN DEFAULT TRUE,      -- API 생성 여부
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  access_count INTEGER DEFAULT 1,
+  last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 🔄 **마이그레이션 전략**
+
+#### **단순화 결정 (v1.1.0)**
+- **레거시 제거**: `ai_response` (텍스트 배열) → `ai_response` (JSON PredicateCandidate[])
+- **단일 응답 타입**: 완전한 메타데이터 (text, emoji, category) 포함
+- **마이그레이션 복구**: 실패한 마이그레이션 자동 정리 로직 구현
+- **데이터 정리**: 호환되지 않는 레거시 캐시 데이터 삭제
+
+```typescript
+// 마이그레이션 복구 로직
+if (appliedMigrations.includes('003_complete_responses_only')) {
+  console.log('🧹 [DB] 실패한 마이그레이션 정리: 003_complete_responses_only')
+  await this.client.execute(`DELETE FROM schema_migrations WHERE id = '003_complete_responses_only'`)
+}
+```
+
+### 📈 **캐시 전략**
+
+#### **AI 응답 캐시**
+- **유지 기간**: 3개월 (설정 가능)
+- **용량 관리**: LRU 방식으로 1000개 → 800개 유지
+- **중복 방지**: 입력어 + 응답 + 모델명 기반 해시
+- **모델 우선순위**: OpenAI > Gemini > 로컬 폴백
+
+#### **TTS 오디오 캐시**  
+- **압축**: Base64 + gzip으로 용량 최적화
+- **용량 제한**: 100MB 최대 크기
+- **품질 보존**: MP3 형식으로 고품질 유지
+- **다중 제공자**: GCP TTS, Gemini TTS, Web Speech API
+
+### 🛡️ **데이터 보안 및 개인정보**
+
+#### **익명화 정책**
+- **사용자 식별**: 익명 사용 (user_id NULL 허용)
+- **입력 데이터**: 개인정보 포함하지 않는 단순 명사만 저장
+- **로그 정책**: 디버깅용 로그에서 민감 정보 제외
+
+#### **데이터 정리**
+- **자동 만료**: 캐시 데이터 3개월 후 자동 삭제
+- **용량 관리**: 설정된 한계 초과 시 오래된 데이터 우선 삭제
+- **수동 정리**: 관리자 도구를 통한 선택적 데이터 삭제 가능
+
+### ⚡ **성능 최적화**
+
+#### **인덱스 전략**
+```sql
+-- AI 캐시 조회 최적화
+CREATE INDEX idx_input_word ON ai_predicate_cache(input_word);
+CREATE INDEX idx_expires_at ON ai_predicate_cache(expires_at);
+CREATE INDEX idx_ai_response ON ai_predicate_cache(ai_response);
+
+-- TTS 캐시 조회 최적화  
+CREATE INDEX idx_sentence_hash ON tts_audio_cache(sentence_hash);
+CREATE INDEX idx_tts_provider ON tts_audio_cache(tts_provider);
+```
+
+#### **쿼리 최적화**
+- **복합 조건**: 만료일 + 단어 + 소스를 조합한 효율적 쿼리
+- **배치 처리**: 다중 삭제 작업 시 트랜잭션 활용
+- **연결 풀링**: LibSQL 클라이언트 재사용으로 연결 오버헤드 최소화
+
+### 🔮 **확장성 고려사항**
+
+#### **스케일링 전략**
+- **Turso 글로벌 복제**: 사용자 위치별 성능 최적화
+- **캐시 계층화**: 로컬 메모리 → Turso → AI API 순서
+- **부하 분산**: 여러 AI 제공자 간 로드 밸런싱
+
+#### **미래 확장 계획**
+- **사용자 개인화**: 개별 사용자 맞춤 캐시 (선택적)
+- **멀티 언어**: 다국어 서술어 지원
+- **고급 분석**: 사용 패턴 분석 및 개선 제안
