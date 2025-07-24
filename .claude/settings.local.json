@@ -24,7 +24,8 @@
       "Bash(timeout 15 npx vitest run src/utils/__tests__/buttonComposition.test.tsx --no-coverage)",
       "Bash(vercel:*)",
       "Bash(timeout 30 npm run build:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": []
   }
