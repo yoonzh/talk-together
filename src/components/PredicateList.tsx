@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import aiService from '../services/aiService'
+import platformAIService from '../services/PlatformAIService'
 import { HelpDisplay } from './HelpDisplay'
 
 
@@ -31,7 +31,6 @@ const PredicateList: React.FC<PredicateListProps> = ({
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [modelSwitchMessage, setModelSwitchMessage] = useState<string | null>(null)
   
   // AIDEV-NOTE: 강제로 서술어 목록 지우기 처리
   useEffect(() => {
@@ -55,16 +54,12 @@ const PredicateList: React.FC<PredicateListProps> = ({
       setError(null)
       
       try {
-        const aiPredicates = await aiService.generatePredicates(inputText.trim())
+        // Platform AI Service 사용 - 기존 AI 서비스 완전 대체
+        const aiPredicates = await platformAIService.generatePredicates(inputText.trim())
         
-        // 모델 전환 키워드인 경우 빈 배열이 반환되므로 UI 메시지 처리
-        const normalized = inputText.trim().toLowerCase()
-        if ((normalized === '챗지피티' || normalized === 'chatgpt') && aiPredicates.length === 0) {
-          setModelSwitchMessage('이제부터 똑똑이로 ChatGPT를 사용합니다.')
-          setTimeout(() => setModelSwitchMessage(null), 5000)
-        } else if ((normalized === '제미나이' || normalized === 'gemini') && aiPredicates.length === 0) {
-          setModelSwitchMessage('이제부터 똑똑이로 Gemini를 사용합니다.')
-          setTimeout(() => setModelSwitchMessage(null), 5000)
+        // Platform AI Service 사용 알림 (첫 호출 시에만)
+        if (aiPredicates.length > 0) {
+          console.log(`🚀 [Platform AI] 성공적으로 ${aiPredicates.length}개 서술어 생성: ${inputText.trim()}`)
         }
         
         setPredicates(aiPredicates)
@@ -93,33 +88,6 @@ const PredicateList: React.FC<PredicateListProps> = ({
       overflowY: 'auto',
       minHeight: 0 /* flex 자식에서 스크롤 활성화 */
     }}>
-      {modelSwitchMessage && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '120px',
-          fontSize: '20px',
-          fontWeight: 'bold',
-          color: '#2196F3',
-          backgroundColor: '#e3f2fd',
-          border: '2px solid #2196F3',
-          borderRadius: '12px',
-          margin: '20px',
-          animation: 'fadeIn 0.5s ease-in-out'
-        }}>
-          <style>
-            {`
-              @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.9); }
-                to { opacity: 1; transform: scale(1); }
-              }
-            `}
-          </style>
-          <span style={{ marginRight: '10px' }}>🤖</span>
-          {modelSwitchMessage}
-        </div>
-      )}
 
       {loading && (
         <div style={{
@@ -142,7 +110,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
               .loading-dot-3 { animation: loadingDots 1.4s infinite 0.4s; }
             `}
           </style>
-          🤖 똑똑이가 어떤 말을 할지 생각 중이에요
+          🚀 Platform AI가 어떤 말을 할지 생각 중이에요
           <span className="loading-dot-1">.</span>
           <span className="loading-dot-2">.</span>
           <span className="loading-dot-3">.</span>
