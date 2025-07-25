@@ -19,10 +19,10 @@ interface PredicateListProps {
   currentSettings?: any
 }
 
-const PredicateList: React.FC<PredicateListProps> = ({ 
-  inputText, 
-  onPredicateSelect, 
-  shouldGenerate = false, 
+const PredicateList: React.FC<PredicateListProps> = ({
+  inputText,
+  onPredicateSelect,
+  shouldGenerate = false,
   forcePredicatesClear = false,
   onPredicatesCleared,
   showHelp = false,
@@ -31,7 +31,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
   const [predicates, setPredicates] = useState<PredicateCandidate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // AIDEV-NOTE: 강제로 서술어 목록 지우기 처리
   useEffect(() => {
     if (forcePredicatesClear) {
@@ -49,19 +49,19 @@ const PredicateList: React.FC<PredicateListProps> = ({
         }
         return
       }
-      
+
       setLoading(true)
       setError(null)
-      
+
       try {
         // Platform AI Service 사용 - 기존 AI 서비스 완전 대체
         const aiPredicates = await platformAIService.generatePredicates(inputText.trim())
-        
+
         // Platform AI Service 사용 알림 (첫 호출 시에만)
         if (aiPredicates.length > 0) {
-          console.log(`🚀 [Platform AI] 성공적으로 ${aiPredicates.length}개 서술어 생성: ${inputText.trim()}`)
+          console.log(`성공적으로 ${aiPredicates.length}개 서술어 생성: ${inputText.trim()}`)
         }
-        
+
         setPredicates(aiPredicates)
       } catch (err) {
         setError('서술어 생성에 실패했습니다')
@@ -69,7 +69,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
         setLoading(false)
       }
     }
-    
+
     if (shouldGenerate) {
       generatePredicates()
     }
@@ -110,13 +110,13 @@ const PredicateList: React.FC<PredicateListProps> = ({
               .loading-dot-3 { animation: loadingDots 1.4s infinite 0.4s; }
             `}
           </style>
-          🚀 Platform AI가 어떤 말을 할지 생각 중이에요
+          🤖 똑똑이가 어떤 말을 할지 생각 중이에요
           <span className="loading-dot-1">.</span>
           <span className="loading-dot-2">.</span>
           <span className="loading-dot-3">.</span>
         </div>
       )}
-      
+
       {error && (
         <div style={{
           display: 'flex',
@@ -130,7 +130,7 @@ const PredicateList: React.FC<PredicateListProps> = ({
           {error}
         </div>
       )}
-      
+
       {!loading && !error && (
         <div style={{
           display: 'grid',
@@ -169,8 +169,8 @@ const PredicateList: React.FC<PredicateListProps> = ({
             >
               <div style={{ fontSize: '32px' }}>{predicate.emoji}</div>
               <div style={{ color: '#333' }}>{predicate.text}</div>
-              <div style={{ 
-                fontSize: '12px', 
+              <div style={{
+                fontSize: '12px',
                 color: '#888',
                 opacity: 0.7
               }}>
