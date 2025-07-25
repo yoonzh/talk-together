@@ -40,7 +40,8 @@ describe('키보드 레이아웃 테스트', () => {
     
     // 공백 버튼 클릭
     const spaceButton = screen.getByText('⎵')
-    fireEvent.click(spaceButton)
+    fireEvent.mouseDown(spaceButton)
+    fireEvent.mouseUp(spaceButton)
     
     // 스페이스가 입력되었는지 확인
     expect(inputText).toBe(' ')

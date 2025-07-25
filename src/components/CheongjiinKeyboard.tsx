@@ -1,4 +1,4 @@
-import { useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, forwardRef, useImperativeHandle, useState, useRef } from 'react'
 import { useCheongjiinInput } from '../hooks/useCheongjiinInput'
 
 interface CheongjiinKeyboardProps {
@@ -23,6 +23,11 @@ interface CheongjiinKeyboardRef {
 
 const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardProps>(({ onTextChange, onKeyPress, onCompositionStateChange, autoCompleteConfig }, ref) => {
   const { text, handleKeyPress, clearAll, commitCurrentChar, setText, isComposing, currentChar, getCurrentDisplay } = useCheongjiinInput({ autoCompleteConfig })
+  
+  // AIDEV-NOTE: 롱프레스 상태 관리
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [isLongPress, setIsLongPress] = useState(false)
+  const pressedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     onTextChange(text)
@@ -39,12 +44,15 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     getCompositionState: () => ({ isComposing, currentChar })
   }), [clearAll, commitCurrentChar, setText, isComposing, currentChar])
 
-  // AIDEV-NOTE: 숫자 키보드 레이아웃 (상단)
-  const numberLayout = [
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-  ]
+  // AIDEV-NOTE: 한글-숫자 매핑 테이블
+  const keyNumberMap: Record<string, string> = {
+    'ㅣ': '1', 'ㆍ': '2', 'ㅡ': '3',
+    'ㄱㅋ': '4', 'ㄴㄹ': '5', 'ㄷㅌ': '6',
+    'ㅂㅍ': '7', 'ㅅㅎ': '8', 'ㅈㅊ': '9',
+    'ㅇㅁ': '0'
+  }
 
-  // AIDEV-NOTE: 천지인 키보드 레이아웃 - 아래줄이 공백|ㅇㅁ|백스페이스 순서로 구성됨
+  // AIDEV-NOTE: 천지인 키보드 레이아웃 - 숫자와 통합
   const keyboardLayout = [
     ['ㅣ', 'ㆍ', 'ㅡ'],
     ['ㄱㅋ', 'ㄴㄹ', 'ㄷㅌ'],
@@ -65,10 +73,10 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     }
   }
 
-  const getKeyStyle = (key: string, isNumber = false) => {
+  const getKeyStyle = (key: string) => {
     const baseStyle = {
-      height: isNumber ? '35px' : '70px', // AIDEV-NOTE: 숫자 키는 절반 높이
-      fontSize: isNumber ? '20px' : '24px',
+      height: '70px',
+      fontSize: '24px',
       fontWeight: 'bold',
       border: '2px solid #ddd',
       borderRadius: '12px',
@@ -78,17 +86,8 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center'
-    }
-
-    // 숫자 키 스타일
-    if (isNumber) {
-      return {
-        ...baseStyle,
-        backgroundColor: '#e3f2fd',
-        color: '#1976d2',
-        border: '2px solid #bbdefb'
-      }
+      justifyContent: 'center',
+      position: 'relative' as const
     }
 
     if (key === 'backspace' || key === 'newline' || key === 'space') {
@@ -109,24 +108,60 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
     return baseStyle
   }
 
-  const handleKeyClick = (key: string, isNumber = false) => {
-    onKeyPress?.()
+  // AIDEV-NOTE: 롱프레스 시작 핸들러
+  const handlePressStart = (key: string) => {
+    pressedKeyRef.current = key
+    setIsLongPress(false)
     
-    // AIDEV-NOTE: 숫자 키 처리 - 현재 조합을 완성하고 숫자 추가
-    if (isNumber) {
-      // 현재 조합 중인 글자가 있으면 먼저 완성
-      if (isComposing) {
-        commitCurrentChar()
-        // 조합 완성 후 숫자 입력을 위한 지연 처리
-        setTimeout(() => {
-          handleKeyPress(key)
-        }, 0)
-      } else {
-        handleKeyPress(key)
-      }
-    } else {
-      handleKeyPress(key)
+    // 숫자 매핑이 있는 키만 롱프레스 타이머 시작
+    if (keyNumberMap[key]) {
+      const timer = setTimeout(() => {
+        setIsLongPress(true)
+        // 조합 중이면 먼저 완성
+        if (isComposing) {
+          commitCurrentChar()
+          // 조합 완성 후 숫자 입력
+          setTimeout(() => {
+            handleKeyPress(keyNumberMap[key])
+          }, 0)
+        } else {
+          handleKeyPress(keyNumberMap[key])
+        }
+        setPressTimer(null)
+      }, 1000)
+      setPressTimer(timer)
     }
+  }
+
+  // AIDEV-NOTE: 롱프레스 종료 핸들러
+  const handlePressEnd = (key: string) => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      setPressTimer(null)
+    }
+    
+    // 롱프레스가 아니었다면 일반 한글 입력
+    if (!isLongPress && pressedKeyRef.current === key) {
+      handleKeyClick(key)
+    }
+    
+    setIsLongPress(false)
+    pressedKeyRef.current = null
+  }
+
+  // AIDEV-NOTE: 롱프레스 취소 핸들러
+  const handlePressCancel = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      setPressTimer(null)
+    }
+    setIsLongPress(false)
+    pressedKeyRef.current = null
+  }
+
+  const handleKeyClick = (key: string) => {
+    onKeyPress?.()
+    handleKeyPress(key)
   }
 
   return (
@@ -137,52 +172,7 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
       flexShrink: 0, /* 키보드 크기 고정 */
       paddingBottom: 'calc(35px + var(--safe-area-inset-bottom))' /* 아이폰 하단 여백 증가 */
     }}>
-      {/* AIDEV-NOTE: 숫자 키보드 섹션 */}
-      <div style={{
-        marginBottom: '15px',
-        maxWidth: '400px',
-        margin: '0 auto 15px auto'
-      }}>
-        {numberLayout.map((row, rowIndex) => (
-          <div
-            key={`number-${rowIndex}`}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(10, 1fr)',
-              gap: '5px'
-            }}
-          >
-            {row.map((key, keyIndex) => (
-              <button
-                key={`number-${keyIndex}`}
-                onClick={() => handleKeyClick(key, true)}
-                style={getKeyStyle(key, true)}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.backgroundColor = '#1976d2'
-                  e.currentTarget.style.color = '#ffffff'
-                  e.currentTarget.style.transform = 'scale(0.95)'
-                }}
-                onMouseUp={(e) => {
-                  const numberStyle = getKeyStyle(key, true) as any
-                  e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
-                  e.currentTarget.style.color = numberStyle.color
-                  e.currentTarget.style.transform = 'scale(1)'
-                }}
-                onMouseLeave={(e) => {
-                  const numberStyle = getKeyStyle(key, true) as any
-                  e.currentTarget.style.backgroundColor = numberStyle.backgroundColor
-                  e.currentTarget.style.color = numberStyle.color
-                  e.currentTarget.style.transform = 'scale(1)'
-                }}
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* AIDEV-NOTE: 천지인 키보드 섹션 */}
+      {/* AIDEV-NOTE: 통합 천지인-숫자 키보드 */}
       <div style={{
         display: 'grid',
         gridTemplateRows: 'repeat(4, 1fr)',
@@ -203,22 +193,49 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
             {row.map((key, keyIndex) => (
               <button
                 key={keyIndex}
-                onClick={() => handleKeyClick(key)}
                 style={getKeyStyle(key)}
                 onMouseDown={(e) => {
                   e.currentTarget.style.backgroundColor = '#e0e0e0'
                   e.currentTarget.style.transform = 'scale(0.95)'
+                  handlePressStart(key)
                 }}
                 onMouseUp={(e) => {
                   e.currentTarget.style.backgroundColor = getKeyStyle(key).backgroundColor
                   e.currentTarget.style.transform = 'scale(1)'
+                  handlePressEnd(key)
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = getKeyStyle(key).backgroundColor
                   e.currentTarget.style.transform = 'scale(1)'
+                  handlePressCancel()
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault()
+                  handlePressStart(key)
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault()
+                  handlePressEnd(key)
+                }}
+                onTouchCancel={(e) => {
+                  e.preventDefault()
+                  handlePressCancel()
                 }}
               >
                 {getKeyDisplay(key)}
+                {/* AIDEV-NOTE: 숫자 표시 (해당하는 키만) */}
+                {keyNumberMap[key] && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '6px',
+                    fontSize: '60%',
+                    color: '#666',
+                    fontWeight: 'normal'
+                  }}>
+                    {keyNumberMap[key]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
