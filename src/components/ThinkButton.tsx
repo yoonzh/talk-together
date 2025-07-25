@@ -1,19 +1,19 @@
 import React from 'react'
 
-interface CompleteInputButtonProps {
-  onComplete: () => void
+interface ThinkButtonProps {
+  onThink: () => void
   disabled?: boolean
 }
 
-const CompleteInputButton: React.FC<CompleteInputButtonProps> = ({ onComplete, disabled = false }) => {
+const ThinkButton: React.FC<ThinkButtonProps> = ({ onThink, disabled = false }) => {
   return (
     <button
-      onClick={onComplete}
+      onClick={onThink}
       disabled={disabled}
       style={{
-        width: '80px',
-        height: '80px',
-        fontSize: '32px',
+        width: '53px',
+        height: '53px',
+        fontSize: '24px',
         fontWeight: 'bold',
         color: disabled ? '#ccc' : '#fff',
         backgroundColor: disabled ? '#f0f0f0' : '#4CAF50',
@@ -40,9 +40,9 @@ const CompleteInputButton: React.FC<CompleteInputButtonProps> = ({ onComplete, d
         }
       }}
     >
-      🗣️
+      🤔
     </button>
   )
 }
 
-export default CompleteInputButton
+export default ThinkButton

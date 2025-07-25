@@ -119,7 +119,7 @@ const App: React.FC = () => {
     
     // 조합 완성 후 상태 업데이트를 위한 지연 처리
     setTimeout(async () => {
-      logUserAction('말하기 버튼 클릭', { inputText })
+      logUserAction('생각하기 버튼 클릭', { inputText })
       
       // AIDEV-NOTE: 명령어 처리 시도
       const isCommand = await executeCommand(inputText)
@@ -141,6 +141,32 @@ const App: React.FC = () => {
     }, 50) // 50ms로 늘려서 텍스트 업데이트 완료 후 처리
   }
 
+  const handleSpeak = async () => {
+    const textToSpeak = selectedPredicate || inputText
+    if (!textToSpeak.trim()) return
+
+    logUserAction('소리내기 버튼 클릭', { textToSpeak })
+    
+    try {
+      const ttsService = TTSServiceFactory.createTTSService()
+      await ttsService.playAudio(textToSpeak)
+      
+      logSpeechOutput('소리내기 버튼 TTS 성공', { sentence: textToSpeak })
+    } catch (error) {
+      logSpeechOutput('TTS 실패, Web Speech API 폴백 시도', { sentence: textToSpeak, error })
+      
+      // 폴백: 기본 Web Speech API 사용
+      try {
+        const utterance = new SpeechSynthesisUtterance(textToSpeak)
+        utterance.lang = 'ko-KR'
+        speechSynthesis.speak(utterance)
+        logSpeechOutput('Web Speech API 폴백 성공', { sentence: textToSpeak })
+      } catch (fallbackError) {
+        logSpeechOutput('모든 TTS 방법 실패', { sentence: textToSpeak, error: fallbackError })
+      }
+    }
+  }
+
   return (
     <div style={{ 
       height: '100vh',
@@ -153,6 +179,7 @@ const App: React.FC = () => {
         inputText={inputText} 
         selectedPredicate={selectedPredicate}
         onCompleteInput={handleCompleteInput}
+        onSpeak={handleSpeak}
         isComposing={compositionState.isComposing}
         keyboardVisible={keyboardVisible}
         currentDisplayChar={compositionState.currentDisplayChar}

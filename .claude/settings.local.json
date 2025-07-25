@@ -25,7 +25,8 @@
       "Bash(vercel:*)",
       "Bash(timeout 30 npm run build:*)",
       "Bash(grep:*)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

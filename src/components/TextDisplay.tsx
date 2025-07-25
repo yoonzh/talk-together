@@ -1,10 +1,12 @@
 import React from 'react'
-import CompleteInputButton from './CompleteInputButton'
+import ThinkButton from './ThinkButton'
+import SpeechButton from './SpeechButton'
 
 interface TextDisplayProps {
   inputText: string
   selectedPredicate: string
   onCompleteInput?: () => void
+  onSpeak?: () => void
   isComposing?: boolean
   keyboardVisible?: boolean
   currentDisplayChar?: string
@@ -14,6 +16,7 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
   inputText, 
   selectedPredicate, 
   onCompleteInput, 
+  onSpeak,
   isComposing = false,
   keyboardVisible = true,
   currentDisplayChar = ''
@@ -113,6 +116,12 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
         justifyContent: 'center',
         gap: '20px'
       }}>
+{onSpeak && (
+          <SpeechButton 
+            onSpeak={onSpeak}
+            disabled={!inputText.trim() && !selectedPredicate.trim()}
+          />
+        )}
         <div style={{
           fontSize: '36px',
           fontWeight: 'bold',
@@ -125,8 +134,8 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
           {renderTextWithCursor()}
         </div>
         {onCompleteInput && (
-          <CompleteInputButton 
-            onComplete={onCompleteInput}
+          <ThinkButton 
+            onThink={onCompleteInput}
             disabled={!inputText.trim()}
           />
         )}
