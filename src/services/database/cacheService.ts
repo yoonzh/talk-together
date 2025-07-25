@@ -161,17 +161,32 @@ export class CacheService {
   }
 }
 
-// 싱글톤 캐시 서비스 인스턴스
-let globalCacheService: CacheService | null = null
+// AIDEV-NOTE: DatabaseManager로 이관됨 - 하위 호환성을 위해 유지
+// 새로운 코드에서는 DatabaseManager.getCacheService() 사용 권장
+import { getCacheService as getManagerCacheService } from './DatabaseManager'
 
+/**
+ * @deprecated DatabaseManager.getCacheService() 사용을 권장합니다
+ */
 export async function getCacheService(): Promise<CacheService> {
-  if (!globalCacheService) {
-    globalCacheService = new CacheService()
-    await globalCacheService.initialize()
+  // DatabaseManager가 초기화되지 않았을 수 있으므로 안전한 처리
+  try {
+    return getManagerCacheService()
+  } catch (error) {
+    // 폴백: 기존 방식으로 초기화
+    console.warn('⚠️ [CacheService] DatabaseManager 미초기화 - 폴백 초기화 실행')
+    
+    if (!globalCacheService) {
+      globalCacheService = new CacheService()
+      await globalCacheService.initialize()
+    }
+    
+    return globalCacheService
   }
-  
-  return globalCacheService
 }
+
+// 싱글톤 캐시 서비스 인스턴스 (폴백용)
+let globalCacheService: CacheService | null = null
 
 export async function shutdownCacheService(): Promise<void> {
   if (globalCacheService) {
