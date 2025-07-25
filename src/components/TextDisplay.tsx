@@ -23,19 +23,10 @@ const TextDisplay: React.FC<TextDisplayProps> = ({
 }) => {
   
   const renderTextWithCursor = () => {
-    // 서술어가 선택된 경우 커서 없이 간단히 표시
+    // 서술어가 선택된 경우 선택한 문장만 표시
     if (selectedPredicate) {
-      // 서술어에서 중복된 입력 텍스트 제거
-      let displayPredicate = selectedPredicate
-      if (inputText && selectedPredicate.startsWith(inputText)) {
-        displayPredicate = selectedPredicate.substring(inputText.length)
-      }
-      
       return (
-        <>
-          <span style={{ color: '#2196F3' }}>{inputText}</span>
-          <span style={{ color: '#4CAF50' }}>{displayPredicate}</span>
-        </>
+        <span style={{ color: '#4CAF50' }}>{selectedPredicate}</span>
       )
     }
     
