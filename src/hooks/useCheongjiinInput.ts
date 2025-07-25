@@ -82,8 +82,12 @@ export const useCheongjiinInput = (props?: UseCheongjiinInputProps) => {
   const commitCurrentChar = useCallback(() => {
     clearAutoCompleteTimer() // 수동 완성 시 타이머 정리
     setState(prev => {
-      if (prev.currentChar.initial && prev.currentChar.medial) {
-        const assembled = assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
+      if (prev.currentChar.initial) {
+        // 초성+중성이 있으면 정상 조합, 초성만 있으면 그대로 완성
+        const assembled = prev.currentChar.medial
+          ? assembleHangul(prev.currentChar.initial, prev.currentChar.medial, prev.currentChar.final)
+          : prev.currentChar.initial
+        
         return {
           ...prev,
           text: prev.text + assembled,
