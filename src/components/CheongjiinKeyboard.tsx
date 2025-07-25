@@ -211,15 +211,22 @@ const CheongjiinKeyboard = forwardRef<CheongjiinKeyboardRef, CheongjiinKeyboardP
                 }}
                 onTouchStart={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   handlePressStart(key)
                 }}
                 onTouchEnd={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   handlePressEnd(key)
                 }}
                 onTouchCancel={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   handlePressCancel()
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
                 }}
               >
                 {getKeyDisplay(key)}
